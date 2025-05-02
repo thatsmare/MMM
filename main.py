@@ -15,11 +15,11 @@ from matplotlib.figure import Figure
 
 class PlotWindow(QMainWindow):
     def __init__(self):
+        #window size
         super().__init__()
-        self.setWindowTitle("Sine Wave Plotter")
+        self.setWindowTitle("Transfer Function Simulation")
         self.setGeometry(100, 100, 800, 600)
 
-        # Central widget and layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout()
@@ -67,4 +67,3 @@ if __name__ == "__main__":
     window = PlotWindow()
     window.show()
     sys.exit(app.exec_())
-
