@@ -1,69 +1,71 @@
-"""""
-MMM project exercise number 10
-
-Made by Martyna Penkowska 197926 and Natalia Sampławska 197573
-
-"""""
-
 import sys
 import numpy as np
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit, QPushButton, QLabel, QHBoxLayout
+    QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit,
+    QPushButton, QLabel, QHBoxLayout
 )
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-class PlotWindow(QMainWindow):
+
+class Window(QMainWindow):
     def __init__(self):
-        #window size
         super().__init__()
-        self.setWindowTitle("Transfer Function Simulation")
-        self.setGeometry(100, 100, 800, 600)
+        self.setWindowTitle("Transfer Function I/O Illustration")
+        self.setGeometry(100, 100, 1200, 800)
+
+        self.start_menu()
+
+    def start_menu(self):
+        layout = QHBoxLayout()
+        start_b = QPushButton("Start")
+        layout.addWidget(start_b)
+        start_b.clicked.connect(self.central_part)
+
+        widget = QWidget()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+
+    def central_part(self):
+        self.main_display = QVBoxLayout()
+
+        controls_view = QHBoxLayout()
+        menu_b = QPushButton("Menu")
+        controls_view.addWidget(menu_b)
+        menu_b.clicked.connect(self.menu_display)
+
+        self.main_display.addLayout(controls_view)
 
         central_widget = QWidget()
+        central_widget.setLayout(self.main_display)
         self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout()
-        central_widget.setLayout(main_layout)
 
-        # Input controls
-        controls_layout = QHBoxLayout()
-        self.freq_input = QLineEdit("1.0")
-        self.freq_input.setPlaceholderText("Frequency (Hz)")
-        plot_button = QPushButton("Plot")
-        plot_button.clicked.connect(self.plot_signal)
-        controls_layout.addWidget(QLabel("Frequency (Hz):"))
-        controls_layout.addWidget(self.freq_input)
-        controls_layout.addWidget(plot_button)
-        main_layout.addLayout(controls_layout)
+    def menu_display(self):
 
-        # Plotting area
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
-        main_layout.addWidget(self.canvas)
+        menu_view = QHBoxLayout()
+        self.nominator_input = QLineEdit("nominator")
+        self.denominator_input = QLineEdit("denominator")
+        set_b = QPushButton("Set parameters")
+        back_b = QPushButton("Close")
 
-        # Initial plot
-        self.plot_signal()
+        back_b.clicked.connect(self.central_part)
 
-    def plot_signal(self):
-        try:
-            freq = float(self.freq_input.text())
-        except ValueError:
-            freq = 1.0
+        menu_view.addWidget(QLabel("Nominator of G :"))
+        menu_view.addWidget(self.nominator_input)
+        menu_view.addWidget(QLabel("Denominator of G :"))
+        menu_view.addWidget(self.denominator_input)
+        menu_view.addWidget(set_b)
+        menu_view.addWidget(back_b)
 
-        x = np.linspace(0, 2, 1000)
-        y = np.sin(2 * np.pi * freq * x)
 
-        self.figure.clear()
-        ax = self.figure.add_subplot(111)
-        ax.plot(x, y)
-        ax.set_title(f"Sine Wave (f = {freq:.2f} Hz)")
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Amplitude")
-        self.canvas.draw()
+        menu_widget = QWidget()
+        menu_widget.setLayout(menu_view)
+        self.setCentralWidget(menu_widget)
 
-# Run app
+
+#run
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = PlotWindow()
-    window.show()
+    windowapp = Window()
+    windowapp.show()
     sys.exit(app.exec_())
