@@ -43,7 +43,7 @@ class Window(QMainWindow):
 
     def menu_display(self):
 
-        menu_view = QHBoxLayout()
+        menu_view = QVBoxLayout()
         self.nominator_input = QLineEdit("nominator")
         self.denominator_input = QLineEdit("denominator")
         set_b = QPushButton("Set parameters")
@@ -70,3 +70,47 @@ if __name__ == "__main__":
     windowapp = Window()
     windowapp.show()
     sys.exit(app.exec_())
+
+"""
+class transfer_function:
+    def poles():
+    #przekształca podane współczynniki bn na postać mianownika i liczy miejsca zerowe
+        
+    def zeros():
+    #przekształca podane współczynniki an na postać licznika i liczy miejsca zerowe
+
+    def transfer_show():
+    #wyświetlenie transmitancji w oknie
+
+
+class input signal:
+    def sin():
+    #ustawienie parametrów sinusoidy
+
+    def square():
+    
+    def triangle():
+    
+    def input_plot():
+    #rysowanie sygnały wejściowego
+    
+
+class output_signal:
+    def output_s():
+    #wyjście w dziedzinie operatorowej znając G(s) i U(s)
+
+    def differentiation():
+    #różniczkowanie metodą numeryczną do uzyskania odpowiedzi w dziedzinie czasu
+
+    def output_plot():
+    #rysowanie sygnału wyjściowego
+
+    
+class bode:
+    def amplitude():
+    #algorytm na funkcje i rysowanie
+    
+    def phase():
+    #algorytm na funkcje i rysowanie
+
+"""
