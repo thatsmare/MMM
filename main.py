@@ -2,8 +2,9 @@ import sys
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit,
-    QPushButton, QLabel, QHBoxLayout
+    QPushButton, QLabel, QHBoxLayout, QRadioButton
 )
+from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -17,28 +18,28 @@ class Window(QMainWindow):
         self.start_menu()
 
     def start_menu(self):
-        layout = QHBoxLayout()
-        start_b = QPushButton("Start")
-        layout.addWidget(start_b)
-        start_b.clicked.connect(self.central_part)
+        layout = QVBoxLayout()
 
+        title = QLabel("<h1>Projekt 10 - implementacja symulatora układu opisanego za pomocą transmitancji</h1>")
+        title.setAlignment(Qt.AlignCenter)
+
+        description = QLabel("Symulator umożliwia uzyskanie odpowiedzi czasowych układu na pobudzenie sygnałem" \
+        " prostokątnym o skończonym czasie trwania, trójkątnym i sinusoidalnym o zadanych parametrach. Możliwa jest zmiana wszystkich" \
+        " współczynników licznika i mianownika transmitancji. Program wykreśla charakterystyki częstotliwościowe Bodego oraz sygnał wejściowy" \
+        " i wyjściowy, na podstawie czego określa stabliność układu.")
+        description.setWordWrap(True)
+        description.setAlignment(Qt.AlignCenter)
+
+        start_b = QPushButton("Menu")
+        start_b.clicked.connect(self.menu_display)
+
+        layout.addWidget(title)
+        layout.addWidget(description)
+        layout.addWidget(start_b)
+        
         widget = QWidget()
         widget.setLayout(layout)
         self.setCentralWidget(widget)
-
-    def central_part(self):
-        self.main_display = QVBoxLayout()
-
-        controls_view = QHBoxLayout()
-        menu_b = QPushButton("Menu")
-        controls_view.addWidget(menu_b)
-        menu_b.clicked.connect(self.menu_display)
-
-        self.main_display.addLayout(controls_view)
-
-        central_widget = QWidget()
-        central_widget.setLayout(self.main_display)
-        self.setCentralWidget(central_widget)
 
     def menu_display(self):
 
@@ -48,7 +49,7 @@ class Window(QMainWindow):
         set_b = QPushButton("Set parameters")
         back_b = QPushButton("Close")
 
-        back_b.clicked.connect(self.central_part)
+        back_b.clicked.connect(self.start_menu)
 
         menu_view.addWidget(QLabel("Nominator of G :"))
         menu_view.addWidget(self.nominator_input)
