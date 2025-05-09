@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from scipy.signal import TransferFunction
+from scipy.signal import freqs
 
 """
 class transfer_function:
@@ -19,6 +21,72 @@ class transfer_function:
     def transfer_show():
     #wyświetlenie transmitancji w oknie
     """
+
+# Plotting the Bode
+class BodePlot:
+    def __init__(self, numerator, denominator):
+      #preparing the values for plotting
+      self.numerator = numerator
+      self.denominator = denominator
+      
+      # getting the poles and zeros to determine the range of the bode plot
+      tf = TransferFunction(numerator, denominator)
+
+      # sorting for easier access
+      zeros_and_poles = sorted(0.1 * z for z in tf.zeros + tf.poles)
+
+
+      #Zero is bad at log scale  
+      """
+      BROKEN 
+      if zeros_and_poles[-1] > 0:
+          max_value = 10 * zeros_and_poles[-1]
+      else:
+          max_value = 10
+          
+      min_value = 0.1  
+      for i in zeros_and_poles:
+        if i > 0:
+            min_value = 0.1 * i
+            break
+       """
+      min_value = 0.1
+      max_value = 1000
+      
+      
+
+      #the necessary range of the plot
+      self.range = [min_value, max_value]
+
+      self.figure = Figure(figsize=(6, 4))
+      self.canvas = FigureCanvas(self.figure)
+
+      self.plotting_amplitude()
+    
+    def plotting_amplitude(self):
+        ax = self.figure.add_subplot(111)
+        ax.set_title("Magnitude Bode Plot")
+        ax.set_xlabel("Frequency")
+        ax.set_ylabel("Magnitude [dB]")
+        ax.set_xscale("log") # log on x axis
+
+        # w to put in tf
+        w = np.logspace(np.log10(self.range[0]), np.log10(self.range[1]), 1000) # 1000 points to count
+
+        # counts tf(j*w)
+        w, amplitude_line = freqs(self.numerator, self.denominator,w)
+
+        #change to dB
+        magnitude = 20 * np.log10(abs(amplitude_line))
+
+        ax.plot(w, magnitude)
+        self.canvas.draw()
+
+      
+
+      
+      
+
 
 class Window(QMainWindow):
     def __init__(self):
@@ -63,13 +131,12 @@ class Window(QMainWindow):
         self.b4 = 0
         self.b3 = 0
         self.b2 = 0
-        self.b1 = 0
-        self.b0 = 0
-        self.a4 = 0
+        self.b1 = 1
+        self.b0 = 1
         self.a3 = 0
         self.a2 = 0
         self.a1 = 0
-        self.a0 = 0
+        self.a0 = 1
 
     def menu_display(self):
        menu_view = QVBoxLayout()
@@ -198,9 +265,17 @@ class Window(QMainWindow):
 
     # tf coefficiants for easy access 
     def get_tf_coefficients(self):
-        numerator = [self.a4, self.a3, self.a2, self.a1, self.a0]
+        numerator = [ self.a3, self.a2, self.a1, self.a0]
         denominator = [self.b3, self.b2, self.b1, self.b0]
         return numerator, denominator
+    
+    # Poles and zeros
+    def get_poles_and_zeros(self):
+        #Obv this will need a proper function
+        poles = [1, 10, 100]
+        zeros = [5,4]
+        return poles, zeros
+    
 
     def simulation(self):
 
@@ -220,7 +295,11 @@ class Window(QMainWindow):
         self.setCentralWidget(simulation_widget)
 
         # Bode plot part
+        #poles, zeros = self.get_poles_and_zeros()
+        numerator,denominator = self.get_tf_coefficients()
+        self.bode = BodePlot(numerator, denominator)
 
+        simulation_view.addWidget(self.bode.canvas)
     
     
 #run
@@ -267,8 +346,5 @@ class bode:
     
     def system_stability():
 
-"""
-class BodePlot:
-    def __init__(self, numinator, denominator):
-      self.numinator = nume
+"""   
      
