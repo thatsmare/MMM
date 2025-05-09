@@ -20,6 +20,25 @@ class transfer_function:
     #wyświetlenie transmitancji w oknie
     """
 
+# Plotting the Bode
+class BodePlot:
+    def __init__(self, poles, zeros):
+      #preparing the values for plotting
+      self.poles_on_plot = sorted(poles)
+      self.zeros_on_plot = [0.1 * z for z in sorted(zeros)]
+
+      #the necessary range of the plot
+      self.range = [0.1*min(self.poles_on_plot[0], self.zeros_on_plot[0]), 10*max(self.poles_on_plot[-1], self.zeros_on_plot[-1]) ]
+    
+    def plotting_amplitude(self):
+      
+      #how many dB per decade basically climb_count*20dB is the line ascending/descending
+      climb_count = 0
+
+      
+      
+
+
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -277,23 +296,6 @@ class bode:
     def system_stability():
 
 """
-# Plotting the Bode
-class BodePlot:
-    def __init__(self, poles, zeros):
-      #preparing the values for plotting
-      self.poles_on_plot = sorted(poles)
-      self.zeros_on_plot = [0.1 * z for z in sorted(zeros)]
-
-      #the necessary range of the plot
-      self.range = [0.1*min(self.poles_on_plot[0], self.zeros_on_plot[0]), 10*max(self.poles_on_plot[-1], self.zeros_on_plot[-1]) ]
-    
-    def plotting_amplitude(self):
-      
-      #how many dB per decade basically climb_count*20dB is the line ascending/descending
-      climb_count = 0
-
-      
-      
 
 
 
