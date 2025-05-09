@@ -73,10 +73,10 @@ class Window(QMainWindow):
 
     def menu_display(self):
         menu_view = QVBoxLayout()
-        self.nominator_a3_input = QLineEdit(str(self.a3))
-        self.nominator_a2_input = QLineEdit(str(self.a2))
-        self.nominator_a1_input = QLineEdit(str(self.a1))
-        self.nominator_a0_input = QLineEdit(str(self.a0))
+        self.numinator_a3_input = QLineEdit(str(self.a3))
+        self.numinator_a2_input = QLineEdit(str(self.a2))
+        self.numinator_a1_input = QLineEdit(str(self.a1))
+        self.numinator_a0_input = QLineEdit(str(self.a0))
         self.denominator_b4_input = QLineEdit(str(self.b4))
         self.denominator_b3_input = QLineEdit(str(self.b3))
         self.denominator_b2_input = QLineEdit(str(self.b2))
@@ -90,39 +90,39 @@ class Window(QMainWindow):
 
         menu_view.addWidget(QLabel("<h3>Coefficients of transfer function</h3>"))
         menu_view.addWidget(QLabel("Nominator of G :"))
-        self.nominator_a3_input.setFixedWidth(80)
-        self.nominator_a3_input.editingFinished.connect(lambda: self.update_coefficient(self.nominator_a3_input, "a3"))
+        self.numinator_a3_input.setFixedWidth(80)
+        self.numinator_a3_input.editingFinished.connect(lambda: self.update_coefficient(self.numinator_a3_input, "a3"))
         a3_layout = QHBoxLayout()
         a3_layout.setAlignment(Qt.AlignLeft)
         a3_layout.addWidget(QLabel("a3:"))
-        a3_layout.addWidget(self.nominator_a3_input)
+        a3_layout.addWidget(self.numinator_a3_input)
         a3_layout.addStretch()
         menu_view.addLayout(a3_layout)
 
-        self.nominator_a2_input.setFixedWidth(80)
-        self.nominator_a2_input.editingFinished.connect(lambda: self.update_coefficient(self.nominator_a2_input, "a2"))
+        self.numinator_a2_input.setFixedWidth(80)
+        self.numinator_a2_input.editingFinished.connect(lambda: self.update_coefficient(self.numinator_a2_input, "a2"))
         a2_layout = QHBoxLayout()
         a2_layout.setAlignment(Qt.AlignLeft)
         a2_layout.addWidget(QLabel("a2:"))
-        a2_layout.addWidget(self.nominator_a2_input)
+        a2_layout.addWidget(self.numinator_a2_input)
         a2_layout.addStretch()
         menu_view.addLayout(a2_layout)
 
-        self.nominator_a1_input.setFixedWidth(80)
-        self.nominator_a1_input.editingFinished.connect(lambda: self.update_coefficient(self.nominator_a1_input, "a1"))
+        self.numinator_a1_input.setFixedWidth(80)
+        self.numinator_a1_input.editingFinished.connect(lambda: self.update_coefficient(self.numinator_a1_input, "a1"))
         a1_layout = QHBoxLayout()
         a1_layout.setAlignment(Qt.AlignLeft)
         a1_layout.addWidget(QLabel("a1:"))
-        a1_layout.addWidget(self.nominator_a1_input)
+        a1_layout.addWidget(self.numinator_a1_input)
         a1_layout.addStretch()
         menu_view.addLayout(a1_layout)
 
-        self.nominator_a0_input.setFixedWidth(80)
-        self.nominator_a0_input.editingFinished.connect(lambda: self.update_coefficient(self.nominator_a0_input, "a0"))
+        self.numinator_a0_input.setFixedWidth(80)
+        self.numinator_a0_input.editingFinished.connect(lambda: self.update_coefficient(self.numinator_a0_input, "a0"))
         a0_layout = QHBoxLayout()
         a0_layout.setAlignment(Qt.AlignLeft)
         a0_layout.addWidget(QLabel("a0:"))
-        a0_layout.addWidget(self.nominator_a0_input)
+        a0_layout.addWidget(self.numinator_a0_input)
         a0_layout.addStretch()
         menu_view.addLayout(a0_layout)
 
@@ -199,9 +199,9 @@ class Window(QMainWindow):
 
     # tf coefficiants for easy access 
     def get_tf_coefficients(self):
-        nominator = [self.a4, self.a3, self.a2, self.a1, self.a0] #licznikGÓRA
+        numinator = [self.a4, self.a3, self.a2, self.a1, self.a0] #licznikGÓRA
         denominator = [self.b3, self.b2, self.b1, self.b0] #mianownikDÓŁ
-        return nominator, denominator
+        return numinator, denominator
 
     def simulation(self):
 
@@ -270,6 +270,6 @@ class bode:
 
 """
 """class BodePlot:
-    def __init__(self, nominator, denominator):
-"""      
-        
+    def __init__(self, nouminator, denominator):
+      self.numinator
+   """     
