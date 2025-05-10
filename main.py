@@ -28,65 +28,77 @@ class BodePlot:
       #preparing the values for plotting
       self.numerator = numerator
       self.denominator = denominator
-      
+
       # getting the poles and zeros to determine the range of the bode plot
       tf = TransferFunction(numerator, denominator)
 
-      # sorting for easier access
-      zeros_and_poles = sorted(0.1 * z for z in tf.zeros + tf.poles)
+      # was getting errors without specifying (generators)
+      zeros_and_poles = list(tf.poles) + list(tf.zeros)
 
+      #Zero is bad at log scale
+      zeros_and_poles = [abs(f) for f in zeros_and_poles if abs(f) > 1e-6]
 
-      #Zero is bad at log scale  
-      """
-      BROKEN 
-      if zeros_and_poles[-1] > 0:
-          max_value = 10 * zeros_and_poles[-1]
+     # preparing range of the plot
+      if zeros_and_poles:
+        min_value = 0.1 * min(zeros_and_poles)
+        max_value = 10 * max(zeros_and_poles)
       else:
-          max_value = 10
-          
-      min_value = 0.1  
-      for i in zeros_and_poles:
-        if i > 0:
-            min_value = 0.1 * i
-            break
-       """
-      min_value = 0.1
-      max_value = 1000
+        min_value = 0.1
+        max_value = 100
       
-      
-
       #the necessary range of the plot
       self.range = [min_value, max_value]
 
       self.figure = Figure(figsize=(6, 4))
       self.canvas = FigureCanvas(self.figure)
 
-      self.plotting_amplitude()
+      self.plotting_bode()
     
-    def plotting_amplitude(self):
-        ax = self.figure.add_subplot(111)
-        ax.set_title("Magnitude Bode Plot")
-        ax.set_xlabel("Frequency")
-        ax.set_ylabel("Magnitude [dB]")
-        ax.set_xscale("log") # log on x axis
-
+    def plotting_bode(self):
+        ax_mag = self.figure.add_subplot(211)
+        ax_ph = self.figure.add_subplot(212, sharex=ax_mag) #rows,col,index
+        
         # w to put in tf
         w = np.logspace(np.log10(self.range[0]), np.log10(self.range[1]), 1000) # 1000 points to count
-
+        
         # counts tf(j*w)
-        w, amplitude_line = freqs(self.numerator, self.denominator,w)
+        w, plot_line = freqs(self.numerator, self.denominator,w)
 
-        #change to dB
-        magnitude = 20 * np.log10(abs(amplitude_line))
+        #change to dB and angle respectively
+        magnitude = 20 * np.log10(abs(plot_line))
+        phase = np.angle(plot_line, deg=True)
+        
+        #STABILITY
+        to_zero = np.abs(phase + 180) #we're looking for phase at -180 so minimazing it to 0
+        phase_180_idx = np.argmin(to_zero)
+        magnitude_180 = magnitude[phase_180_idx]
+        gain_margin = -magnitude_180 #zapas wzmocnienia
 
-        ax.plot(w, magnitude)
+        gain_0_idx = np.argmin(np.abs(magnitude))
+        phase_0 = phase[gain_0_idx]
+        phase_margin = 180 + phase_0   
+
+        if gain_margin and phase_margin > 0:
+            self.stable = True
+        else:
+            self.stable = False
+
+        #Plotting magnitude
+        ax_mag.set_title("Magnitude Bode Plot")
+        ax_mag.set_xlabel("Frequency [rad/s]")
+        ax_mag.set_ylabel("Magnitude [dB]")
+        ax_mag.set_xscale("log") # log on x axis
+        ax_mag.plot(w, magnitude)
+
+        #PLotting phase
+        ax_ph.set_title("Phase Bode Plot")
+        ax_ph.set_xlabel("Frequency [rad/s]")
+        ax_ph.set_ylabel("Phase [°]")
+        ax_ph.set_xscale("log") # log on x axis
+        ax_ph.plot(w, phase)
+
         self.canvas.draw()
-
       
-
-      
-      
-
 
 class Window(QMainWindow):
     def __init__(self):
@@ -162,12 +174,12 @@ class Window(QMainWindow):
         #WARTOŚCI POCZĄTKOWE ALE FINALNIE NA PEWNO NIE W TYM MIEJSCU
         self.b4 = 0
         self.b3 = 0
-        self.b2 = 0
+        self.b2 = 1
         self.b1 = 1
         self.b0 = 1
         self.a3 = 0
         self.a2 = 0
-        self.a1 = 0
+        self.a1 = 1
         self.a0 = 1
         self.sine_amp = 1
         self.sine_freq = 1
@@ -383,6 +395,12 @@ class Window(QMainWindow):
         self.bode = BodePlot(numerator, denominator)
 
         simulation_view.addWidget(self.bode.canvas)
+
+        stability = QLabel(f"System stabilny: {self.bode.stable}")
+
+        stability.setAlignment(Qt.AlignCenter) 
+        simulation_view.addWidget(stability)
+
     
     
 #run
