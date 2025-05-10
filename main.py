@@ -103,6 +103,38 @@ class Window(QMainWindow):
             value = 0  
         setattr(self, attr_name, value)
 
+    def update_sine(self):
+        try:
+            # Pobieranie i konwersja na float
+            freq = float(self.freq_input.text())
+            amp = float(self.amp_input.text())
+            phase = float(self.phase_input.text())
+
+            # Sprawdzenie, czy wartości są poprawne (np. nie mogą być ujemne)
+            if freq <= 0:
+                raise ValueError("Częstotliwość musi być większa niż zero.")
+            if amp <= 0:
+                raise ValueError("Amplituda musi być większa niż zero.")
+            if not (-np.pi <= phase <= np.pi):
+                raise ValueError("Faza musi być w zakresie od -π do +π.")
+
+            # Jeśli dane są poprawne, zapisujemy je do zmiennych
+            self.sine_freq = freq
+            self.sine_amp = amp
+            self.sine_phase = phase
+
+        except ValueError as e:
+            # Obsługa błędu, jeśli coś poszło nie tak
+            print(f"Błąd: {e}")
+
+    def update_selected_signal(self):
+        if self.sinus_button.isChecked():
+            self.selected_signal = "sine"
+        elif self.square_button.isChecked():
+            self.selected_signal = "square"
+        elif self.triangle_button.isChecked():
+            self.selected_signal = "triangle"
+
     def start_menu(self):
         layout = QVBoxLayout()
 
@@ -137,6 +169,10 @@ class Window(QMainWindow):
         self.a2 = 0
         self.a1 = 0
         self.a0 = 1
+        self.sine_amp = 1
+        self.sine_freq = 1
+        self.sine_phase = 0
+        self.selected_signal = "sine"
 
     def menu_display(self):
        menu_view = QVBoxLayout()
@@ -246,11 +282,58 @@ class Window(QMainWindow):
        self.square_button = QRadioButton("Square signal")
        self.triangle_button = QRadioButton("Triangle wave")
 
-       self.sinus_button.setChecked(True)
+       if self.selected_signal == "sine":
+            self.sinus_button.setChecked(True)
+       elif self.selected_signal == "square":
+            self.square_button.setChecked(True)
+       elif self.selected_signal == "triangle":
+            self.triangle_button.setChecked(True)
+       #self.sinus_button.setChecked(True)
+       self.sinus_button.toggled.connect(self.update_selected_signal)
+       self.square_button.toggled.connect(self.update_selected_signal)
+       self.triangle_button.toggled.connect(self.update_selected_signal)
 
-       signal_layout.addWidget(self.sinus_button)
+       sine_row_layout = QHBoxLayout()
+       self.freq_input = QLineEdit()
+       self.freq_input.setFixedWidth(80)
+       self.freq_input.setAlignment(Qt.AlignLeft)
+       self.freq_input.setText(str(self.sine_freq))
+       self.amp_input = QLineEdit()
+       self.amp_input.setFixedWidth(80)
+       self.amp_input.setAlignment(Qt.AlignLeft)
+       self.amp_input.setText(str(self.sine_amp))
+       self.phase_input = QLineEdit()
+       self.phase_input.setFixedWidth(80)
+       self.phase_input.setAlignment(Qt.AlignLeft)
+       self.phase_input.setText(str(self.sine_phase))
+
+       freq_layout = QHBoxLayout()
+       freq_label = QLabel("Częstotliwość [Hz]:")
+       freq_layout.addWidget(freq_label)
+       freq_layout.addWidget(self.freq_input)
+       freq_layout.addStretch()
+       amp_layout = QHBoxLayout()
+       amp_label = QLabel("Amplituda [V]:")
+       amp_layout.addWidget(amp_label)
+       amp_layout.addWidget(self.amp_input)
+       amp_layout.addStretch()
+       phase_layout = QHBoxLayout()
+       phase_label = QLabel("Przesunięcie fazowe [rad]:")
+       phase_layout.addWidget(phase_label)
+       phase_layout.addWidget(self.phase_input)
+       phase_layout.addStretch()
+       sine_row_layout.addWidget(self.sinus_button)
+       sine_row_layout.addLayout(freq_layout)
+       sine_row_layout.addLayout(amp_layout)
+       sine_row_layout.addLayout(phase_layout)
+       signal_layout.addLayout(sine_row_layout)   
+       self.freq_input.editingFinished.connect(self.update_sine)
+       self.amp_input.editingFinished.connect(self.update_sine)
+       self.phase_input.editingFinished.connect(self.update_sine) 
+
        signal_layout.addWidget(self.square_button)
        signal_layout.addWidget(self.triangle_button)
+
 
        signal_group_box.setLayout(signal_layout)
 
@@ -266,7 +349,7 @@ class Window(QMainWindow):
     # tf coefficiants for easy access 
     def get_tf_coefficients(self):
         numerator = [ self.a3, self.a2, self.a1, self.a0]
-        denominator = [self.b3, self.b2, self.b1, self.b0]
+        denominator = [ self.b3, self.b2, self.b1, self.b0]
         return numerator, denominator
     
     # Poles and zeros
