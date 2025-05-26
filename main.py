@@ -362,14 +362,21 @@ class Window(QMainWindow):
     def get_tf_coefficients(self):
         numerator = [ self.a3, self.a2, self.a1, self.a0]
         denominator = [ self.b3, self.b2, self.b1, self.b0]
+        
+        #checkes whether everything is zero 
+        if numerator and denominator:
+            self.correct_values = True
+        else:
+            self.correct_values = False
+        
         return numerator, denominator
     
     # Poles and zeros
-    def get_poles_and_zeros(self):
+    """def get_poles_and_zeros(self):
         #Obv this will need a proper function
         poles = [1, 10, 100]
         zeros = [5,4]
-        return poles, zeros
+        return poles, zeros"""
     
 
     def simulation(self):
@@ -390,8 +397,8 @@ class Window(QMainWindow):
         self.setCentralWidget(simulation_widget)
 
         # Bode plot part
-        #poles, zeros = self.get_poles_and_zeros()
         numerator,denominator = self.get_tf_coefficients()
+        
         self.bode = BodePlot(numerator, denominator)
 
         simulation_view.addWidget(self.bode.canvas)
@@ -434,18 +441,6 @@ class output_signal:
     #rysowanie sygnału wyjściowego
 
     
-class bode:
-    def amplitude():
-    #algorytm na funkcje i rysowanie
-    
-    def phase():
-    #algorytm na funkcje i rysowanie
-
-    def gain_margin():
-    
-    def phase_margin():
-    
-    def system_stability():
 
 """   
      
