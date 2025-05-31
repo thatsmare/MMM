@@ -30,9 +30,10 @@ class ObjectTransfer:
     
     def update_coefficients(self, attr_name, value):
        try:
-           value = float(value)
+            value = float(value)
        except ValueError:
-           value = 0.0  
+            value = 0.0
+            raise ValueError(f"{attr_name.capitalize()} musi być liczbą.")
        setattr(self, attr_name, value)
         
     def correct_values(self):
@@ -98,14 +99,11 @@ class InputTriangleFunction:
     def triangle_input_plot(self):"""
     
 class InputSineFunction:
-    def __init__(self, signal_type="sine", amplitude=1.0, frequency=1.0, phase=0.0, duration=10.0, sample_rate=1000):
+    def __init__(self, signal_type="sine", amplitude=1.0, frequency=1.0, phase=0.0):
         self.signal_type = signal_type
         self.amplitude = amplitude
         self.frequency = frequency
         self.phase = phase
-        self.duration = duration
-        self.sample_rate = sample_rate
-        self.t = np.linspace(0, duration, int(duration * sample_rate)) #time vecton
 
     def update_sine(self, attr_name, value):
         try:
@@ -206,17 +204,25 @@ class Window(QMainWindow):
         self.sine_function = InputSineFunction()
         self.setWindowTitle("Transfer Function I/O Illustration")
         self.setGeometry(100, 100, 800, 800)
-
-        #error - input signal
-        self.signal_error_label = QLabel("")
-        self.signal_error_label.setStyleSheet("color: red")
-        self.signal_valid = True 
-        self.signal_error_label_added = False
+        self.transfer_valid = True
+        self.signal_valid = True
         self.start_menu()
+
+    def update_simulate_button_state(self):
+        self.simulate_button.setEnabled(self.signal_valid and self.transfer_valid)
 
     def update_coefficient(self, line_edit, attr_name):
         value = line_edit.text()
-        self.tf_object.update_coefficients(attr_name, value)
+        try: 
+            self.tf_object.update_coefficients(attr_name, value)
+            self.transfer_error_label.setText("")
+            self.transfer_valid = True
+
+        except ValueError as e:
+            self.transfer_error_label.setText(str(e))
+            self.transfer_valid = False
+        self.update_simulate_button_state()
+
 
     def update_sine(self, line_edit, attr_name):
         value = line_edit.text()
@@ -228,8 +234,7 @@ class Window(QMainWindow):
         except ValueError as e:
             self.signal_error_label.setText(str(e))
             self.signal_valid = False
-        self.simulate_button.setEnabled(self.signal_valid)
-
+        self.update_simulate_button_state()
 
     def update_selected_signal(self):
         if self.sinus_button.isChecked():
@@ -277,7 +282,6 @@ class Window(QMainWindow):
        self.denominator_b0_input = QLineEdit(str(self.tf_object.b0))
        self.set_parameters_button = QPushButton("Set parameters")
        self.simulate_button = QPushButton("Simulate")
-       self.simulate_button.setEnabled(self.signal_valid)
        back_b = QPushButton("Back to start")
 
        self.simulate_button.clicked.connect(self.simulation)
@@ -439,6 +443,11 @@ class Window(QMainWindow):
        menu_widget.setLayout(menu_view)
        self.setCentralWidget(menu_widget)
 
+       self.signal_error_label = QLabel("")
+       self.signal_error_label.setStyleSheet("color: red")
+       self.transfer_error_label = QLabel("")
+       self.transfer_error_label.setStyleSheet("color: red")
+       menu_view.addWidget(self.transfer_error_label)
        menu_view.addWidget(self.signal_error_label)
     
     
@@ -454,7 +463,6 @@ class Window(QMainWindow):
         back_b.clicked.connect(self.menu_display)
 
         simulation_view.addWidget(title)
-        simulation_view.addWidget(back_b)
 
         simulation_widget = QWidget()
         simulation_widget.setLayout(simulation_view)
@@ -472,6 +480,8 @@ class Window(QMainWindow):
             error_label = QLabel(f"Błąd: {e}")
             error_label.setStyleSheet("color: red")
             simulation_view.addWidget(error_label)
+
+        simulation_view.addWidget(back_b)
           
 #run
 if __name__ == "__main__":
