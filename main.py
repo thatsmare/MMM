@@ -58,34 +58,26 @@ class ObjectTransfer:
     def __init__(self, signal_type, tf_object, input):
         self.input = input
         self.tf_object = tf_object
+
+    #input in time domain
+    def input_y_t(self):
         if signal_type == "sine":
-            self.num_u, self.den_u = self.sine.sine_transfer()
         elif signal_type == "square":
-            self.num_u, self.den_u = self.square.square_transfer()
         elif signal_type == "triangle":
-            self.num_u, self.den_u = self.triangle.triangle_transfer()
-        else:
-            raise ValueError("Unknown signal type")
-        
-    def compute_Y(self):
-        num_G, den_G  = self.tf_object.get_tf_coefficients()
-        num_U, den_U = self.num_u, self.den_u
-
-        #transfer function of Y
-        num_Y = np.polymul(num_g, num_u)
-        den_Y = np.polymul(den_g, den_u)
-        system = TransferFunction(num_Y, den_Y)
-
+    
     def differentation_rk4(self):
+    
+    #splot funkcji wejściowej i zróżniczkowanej funkcji G obiektu (t)
+    def convolution():
         
     def output_plot(self):"""
 
 
-class InputSquareFunction:
+"""class InputSquareFunction:
     def __init__(self, signal_type="square"):
         self.signal_type = signal_type
     
-    """def square_transfer_function(self):
+    def square_transfer_function(self):
         return square_transfer
     
     def square_input_plot(self):"""
@@ -130,55 +122,12 @@ class InputFunction:
         ax = self.figure.add_subplot(111)  
 
         ax.plot(t, y)
-        ax.set_title("Input {self.signal_type} signal")
+        ax.set_title(f"Input {self.signal_type} signal")
         ax.set_xlabel("Time [s]")
         ax.set_ylabel("Amplitude")
         ax.grid(True)
         self.canvas.draw()
         return self.canvas        
-    
-"""class InputSineFunction:
-    def __init__(self, signal_type="sine", amplitude=1.0, frequency=1.0, phase=0.0, duration=1.0, sample_rate=1000):
-        self.signal_type = signal_type
-        self.amplitude = amplitude
-        self.frequency = frequency
-        self.phase = phase
-        self.duration = duration
-        self.sample_rate = sample_rate
-
-    def update_sine(self, attr_name, value):
-        try:
-            value = float(value)
-        except ValueError:
-            raise ValueError(f"{attr_name.capitalize()} must be a number.")
- 
-        if attr_name == "frequency" and value <= 0:
-            raise ValueError("Wrong frequency.")
-        if attr_name == "amplitude" and value <= 0:
-            raise ValueError("Wrong amplitude.")
-        if attr_name == "phase" and not (-np.pi <= value <= np.pi):
-            raise ValueError("Wrong phase [-pi,pi].")
-
-        setattr(self, attr_name, value)
-
-    def sine_generate(self):
-        t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
-        y = self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
-        return t, y
-        
-    def sine_input_plot(self):
-        t, y = self.sine_generate()
-        self.figure = Figure(figsize=(6, 4))
-        self.canvas = FigureCanvas(self.figure)
-        ax = self.figure.add_subplot(111)  
-
-        ax.plot(t, y)
-        ax.set_title("Input sine signal")
-        ax.set_xlabel("Time [s]")
-        ax.set_ylabel("Amplitude")
-        ax.grid(True)
-        self.canvas.draw()
-        return self.canvas"""
         
 # Plotting the Bode
 class BodePlot:
@@ -256,7 +205,7 @@ class Window(QMainWindow):
         self.tf_object = ObjectTransfer()
         self.selected_signal = "sine"
         self.input_function = InputFunction(self.selected_signal)
-        self.square_function = InputSquareFunction()
+        #self.square_function = InputSquareFunction()
         self.setWindowTitle("Transfer Function I/O Illustration")
         self.setGeometry(100, 100, 800, 800)
         self.transfer_valid = True
@@ -279,7 +228,6 @@ class Window(QMainWindow):
             line_edit.setText("1.0")
             self.transfer_error_label.setText(str(e))
 
-
     def update_input(self, line_edit, attr_name):
         value = line_edit.text()
         try:
@@ -291,14 +239,27 @@ class Window(QMainWindow):
             self.signal_error_label.setText(str(e))
             self.signal_valid = False
         self.update_simulate_button_state()
-
+    
     def update_selected_signal(self):
         if self.sine_button.isChecked():
             self.selected_signal = "sine"
+            self.input_function = InputFunction("sine", 
+                                            float(self.sine_amp_input.text()), 
+                                            float(self.sine_freq_input.text()), 
+                                            float(self.sine_phase_input.text()))
         elif self.square_button.isChecked():
             self.selected_signal = "square"
+            self.input_function = InputFunction("square", 
+                                            float(self.square_amp_input.text()), 
+                                            float(self.square_freq_input.text()))
         elif self.sawtooth_button.isChecked():
             self.selected_signal = "sawtooth"
+            self.input_function = InputFunction("sawtooth", 
+                                            float(self.sawtooth_amp_input.text()), 
+                                            float(self.sawtooth_freq_input.text()), 
+                                            float(self.sawtooth_phase_input.text()))
+
+        self.update_simulate_button_state()
 
     def _labeled_input(self, label_text, widget):
         layout = QHBoxLayout()
@@ -525,13 +486,8 @@ class Window(QMainWindow):
             error_label.setStyleSheet("color: red")
             simulation_view.addWidget(error_label)
 
-        if self.selected_signal == "sine":
-            self.input = self.input_function.input_plot()
-            simulation_view.addWidget(self.input)
-        #elif self.selected_signal == "square":
-        elif self.selected_signal == "sawtooth":
-            self.input = self.input_function.input_plot()
-            simulation_view.addWidget(self.input)
+        self.input = self.input_function.input_plot()
+        simulation_view.addWidget(self.input)
     
         simulation_view.addWidget(back_b)
           
