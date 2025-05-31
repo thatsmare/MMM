@@ -10,6 +10,7 @@ from matplotlib.figure import Figure
 from scipy.signal import TransferFunction
 from scipy.signal import freqs
 from scipy.signal import sawtooth
+from scipy.signal import fftconvolve
 
 
 class ObjectTransfer:
@@ -42,6 +43,7 @@ class ObjectTransfer:
       correct_num = any(coef != 0 for coef in numerator)
       correct_den = any(coef != 0 for coef in denominator)
       return correct_num and correct_den and all_floats
+      #SPRAWDZANIE CZY TRANSMITANCJA JEST WŁAŚCIWA(?)
     
     def get_tf(self):
         if not self.correct_values():
@@ -54,21 +56,17 @@ class ObjectTransfer:
       tf = self.get_tf()
       return list(tf.zeros), list(tf.poles)
     
+
 """class OutputCompute:
     def __init__(self, signal_type, tf_object, input):
         self.input = input
         self.tf_object = tf_object
 
     #input in time domain
-    def input_y_t(self):
-        if signal_type == "sine":
-        elif signal_type == "square":
-        elif signal_type == "triangle":
+    def input_u_t(self):
+        self.u, self.t = input.input_generate()
     
     def differentation_rk4(self):
-    
-    #splot funkcji wejściowej i zróżniczkowanej funkcji G obiektu (t)
-    def convolution():
         
     def output_plot(self):"""
 
@@ -205,7 +203,6 @@ class Window(QMainWindow):
         self.tf_object = ObjectTransfer()
         self.selected_signal = "sine"
         self.input_function = InputFunction(self.selected_signal)
-        #self.square_function = InputSquareFunction()
         self.setWindowTitle("Transfer Function I/O Illustration")
         self.setGeometry(100, 100, 800, 800)
         self.transfer_valid = True
@@ -466,9 +463,7 @@ class Window(QMainWindow):
 
         back_b = QPushButton("Back to menu")
         back_b.clicked.connect(self.menu_display)
-
         simulation_view.addWidget(title)
-
         simulation_widget = QWidget()
         simulation_widget.setLayout(simulation_view)
         self.setCentralWidget(simulation_widget)
@@ -488,7 +483,6 @@ class Window(QMainWindow):
 
         self.input = self.input_function.input_plot()
         simulation_view.addWidget(self.input)
-    
         simulation_view.addWidget(back_b)
           
 #run
