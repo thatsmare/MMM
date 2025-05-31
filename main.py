@@ -10,33 +10,132 @@ from matplotlib.figure import Figure
 from scipy.signal import TransferFunction
 from scipy.signal import freqs
 
-"""
-class transfer_function:
-    def poles():
-    #przekształca podane współczynniki bn na postać mianownika i liczy miejsca zerowe
+
+class ObjectTransfer:
+    def __init__(self):
+      self.b4 = 0.0
+      self.b3 = 0.0
+      self.b2 = 1.0
+      self.b1 = 1.0
+      self.b0 = 1.0
+      self.a3 = 0.0
+      self.a2 = 0.0
+      self.a1 = 1.0
+      self.a0 = 1.0
+
+    def get_tf_coefficients(self):
+      numerator = [self.a3, self.a2, self.a1, self.a0]
+      denominator = [self.b3, self.b2, self.b1, self.b0]
+      return numerator, denominator
+    
+    def update_coefficients(self, attr_name, value):
+       try:
+            value = float(value)
+       except ValueError:
+            raise ValueError(f"{attr_name.capitalize()} musi być liczbą.")
+       setattr(self, attr_name, value)
         
-    def zeros():
-    #przekształca podane współczynniki an na postać licznika i liczy miejsca zerowe
+    def correct_values(self):
+      numerator, denominator = self.get_tf_coefficients()
+      all_floats = all(isinstance(c, float) for c in numerator + denominator)
+      correct_num = any(coef != 0 for coef in numerator)
+      correct_den = any(coef != 0 for coef in denominator)
+      return correct_num and correct_den and all_floats
+    
+    def get_tf(self):
+        if not self.correct_values():
+            raise ValueError("Nieprawidłowa transmitancja obiektu")
+        num, den = self.get_tf_coefficients()
+        return TransferFunction(num, den)
+    
+    def zeros_and_poles(self):
+      #get the poles and zeros 
+      tf = self.get_tf()
+      return list(tf.zeros), list(tf.poles)
+    
+"""class OutputCompute:
+    def __init__(self, signal_type, tf_object):
+        self.sine = InputSineFunction()
+        self.square = InputSquareFunction()
+        self.triangle = InputTrianfleFunction()
+        self.tf_object = tf_object
+        if signal_type == "sine":
+            self.num_u, self.den_u = self.sine.sine_transfer()
+        elif signal_type == "square":
+            self.num_u, self.den_u = self.square.square_transfer()
+        elif signal_type == "triangle":
+            self.num_u, self.den_u = self.triangle.triangle_transfer()
+        else:
+            raise ValueError("Unknown signal type")
+        
+    def compute_Y(self):
+        num_G, den_G  = self.tf_object.get_tf_coefficients()
+        num_U, den_U = self.num_u, self.den_u
 
-    def transfer_show():
-    #wyświetlenie transmitancji w oknie
-    """
+        #transfer function of Y
+        num_Y = np.polymul(num_g, num_u)
+        den_Y = np.polymul(den_g, den_u)
+        system = TransferFunction(num_Y, den_Y)
 
+    def differentation_rk4(self):
+        
+    def output_plot(self):
+
+
+class InputSquareFunction:
+    def __init__(self, signal_type="square"):
+    
+    def square_transfer_function(self):
+        return square_transfer
+    
+    def square_input_plot(self):
+
+class InputTriangleFunction:
+    def __init__(self, signal_type="triangle"):
+        
+    def triangle_transfer(self):
+        return triagnle_transfer
+        
+    def triangle_input_plot(self):"""
+    
+class InputSineFunction:
+    def __init__(self, signal_type="sine", amplitude=1.0, frequency=1.0, phase=0.0):
+        self.signal_type = signal_type
+        self.amplitude = amplitude
+        self.frequency = frequency
+        self.phase = phase
+
+    def update_sine(self, attr_name, value):
+        try:
+            value = float(value)
+        except ValueError:
+            raise ValueError(f"{attr_name.capitalize()} musi być liczbą.")
+ 
+        if attr_name == "frequency" and value <= 0:
+            raise ValueError("Częstotliwość musi być większa niż zero.")
+        if attr_name == "amplitude" and value <= 0:
+            raise ValueError("Amplituda musi być większa niż zero.")
+        if attr_name == "phase" and not (-np.pi <= value <= np.pi):
+            raise ValueError("Faza musi być w zakresie od -π do +π.")
+
+        setattr(self, attr_name, value)
+
+    """def sine_transfer_function(self):
+        sine_transfer =  #tu bedzie transmitancja sinusa
+        return sine_transfer
+        
+        def sine_input_plot(self):"""
+
+       
 # Plotting the Bode
 class BodePlot:
-    def __init__(self, numerator, denominator):
-      #preparing the values for plotting
-      self.numerator = numerator
-      self.denominator = denominator
-
-      # getting the poles and zeros to determine the range of the bode plot
-      tf = TransferFunction(numerator, denominator)
-
-      # was getting errors without specifying (generators)
-      zeros_and_poles = list(tf.poles) + list(tf.zeros)
+    def __init__(self, tf_object):
+      self.tf_object = tf_object
+      self.numerator, self.denominator = self.tf_object.get_tf_coefficients()
+      zeros, poles = self.tf_object.zeros_and_poles()
 
       #Zero is bad at log scale
-      zeros_and_poles = [abs(f) for f in zeros_and_poles if abs(f) > 1e-6]
+      zeros_and_poles = [abs(f) for f in zeros + poles if abs(f) > 1e-6]
 
      # preparing range of the plot
       if zeros_and_poles:
@@ -48,10 +147,8 @@ class BodePlot:
       
       #the necessary range of the plot
       self.range = [min_value, max_value]
-
       self.figure = Figure(figsize=(6, 4))
       self.canvas = FigureCanvas(self.figure)
-
       self.plotting_bode()
     
     def plotting_bode(self):
@@ -103,41 +200,42 @@ class BodePlot:
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.tf_object = ObjectTransfer()
+        self.sine_function = InputSineFunction()
         self.setWindowTitle("Transfer Function I/O Illustration")
-        self.setGeometry(100, 100, 1200, 800)
-
+        self.setGeometry(100, 100, 800, 800)
+        self.transfer_valid = True
+        self.signal_valid = True
         self.start_menu()
 
+    def update_simulate_button_state(self):
+        self.simulate_button.setEnabled(self.signal_valid)
+
     def update_coefficient(self, line_edit, attr_name):
-        try:
-            value = float(line_edit.text())
-        except ValueError:
-            value = 0  
-        setattr(self, attr_name, value)
-
-    def update_sine(self):
-        try:
-            # Pobieranie i konwersja na float
-            freq = float(self.freq_input.text())
-            amp = float(self.amp_input.text())
-            phase = float(self.phase_input.text())
-
-            # Sprawdzenie, czy wartości są poprawne (np. nie mogą być ujemne)
-            if freq <= 0:
-                raise ValueError("Częstotliwość musi być większa niż zero.")
-            if amp <= 0:
-                raise ValueError("Amplituda musi być większa niż zero.")
-            if not (-np.pi <= phase <= np.pi):
-                raise ValueError("Faza musi być w zakresie od -π do +π.")
-
-            # Jeśli dane są poprawne, zapisujemy je do zmiennych
-            self.sine_freq = freq
-            self.sine_amp = amp
-            self.sine_phase = phase
+        value = line_edit.text()
+        try: 
+            self.tf_object.update_coefficients(attr_name, value)
+            self.transfer_error_label.setText("")
 
         except ValueError as e:
-            # Obsługa błędu, jeśli coś poszło nie tak
-            print(f"Błąd: {e}")
+            #bad coeff corrected - given 1.0
+            value = 1.0
+            self.tf_object.update_coefficients(attr_name, value)
+            line_edit.setText("1.0")
+            self.transfer_error_label.setText(str(e))
+
+
+    def update_sine(self, line_edit, attr_name):
+        value = line_edit.text()
+        try:
+            self.sine_function.update_sine(attr_name, value)
+            self.signal_error_label.setText("")
+            self.signal_valid = True
+
+        except ValueError as e:
+            self.signal_error_label.setText(str(e))
+            self.signal_valid = False
+        self.update_simulate_button_state()
 
     def update_selected_signal(self):
         if self.sinus_button.isChecked():
@@ -149,7 +247,6 @@ class Window(QMainWindow):
 
     def start_menu(self):
         layout = QVBoxLayout()
-
         title = QLabel("<h1>Projekt 10 - implementacja symulatora układu opisanego za pomocą transmitancji</h1>")
         title.setAlignment(Qt.AlignCenter)
 
@@ -171,36 +268,24 @@ class Window(QMainWindow):
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
-        #WARTOŚCI POCZĄTKOWE ALE FINALNIE NA PEWNO NIE W TYM MIEJSCU
-        self.b4 = 0
-        self.b3 = 0
-        self.b2 = 1
-        self.b1 = 1
-        self.b0 = 1
-        self.a3 = 0
-        self.a2 = 0
-        self.a1 = 1
-        self.a0 = 1
-        self.sine_amp = 1
-        self.sine_freq = 1
-        self.sine_phase = 0
         self.selected_signal = "sine"
 
     def menu_display(self):
        menu_view = QVBoxLayout()
-       self.numerator_a3_input = QLineEdit(str(self.a3))
-       self.numerator_a2_input = QLineEdit(str(self.a2))
-       self.numerator_a1_input = QLineEdit(str(self.a1))
-       self.numerator_a0_input = QLineEdit(str(self.a0))
-       self.denominator_b4_input = QLineEdit(str(self.b4))
-       self.denominator_b3_input = QLineEdit(str(self.b3))
-       self.denominator_b2_input = QLineEdit(str(self.b2))
-       self.denominator_b1_input = QLineEdit(str(self.b1))
-       self.denominator_b0_input = QLineEdit(str(self.b0))
-       set_b = QPushButton("Simulate")
+       self.numerator_a3_input = QLineEdit(str(self.tf_object.a3))
+       self.numerator_a2_input = QLineEdit(str(self.tf_object.a2))
+       self.numerator_a1_input = QLineEdit(str(self.tf_object.a1))
+       self.numerator_a0_input = QLineEdit(str(self.tf_object.a0))
+       self.denominator_b4_input = QLineEdit(str(self.tf_object.b4))
+       self.denominator_b3_input = QLineEdit(str(self.tf_object.b3))
+       self.denominator_b2_input = QLineEdit(str(self.tf_object.b2))
+       self.denominator_b1_input = QLineEdit(str(self.tf_object.b1))
+       self.denominator_b0_input = QLineEdit(str(self.tf_object.b0))
+       self.set_parameters_button = QPushButton("Set parameters")
+       self.simulate_button = QPushButton("Simulate")
        back_b = QPushButton("Back to start")
 
-       set_b.clicked.connect(self.simulation)
+       self.simulate_button.clicked.connect(self.simulation)
        back_b.clicked.connect(self.start_menu)
 
        menu_view.addWidget(QLabel("Numerator of G :"))
@@ -309,15 +394,15 @@ class Window(QMainWindow):
        self.freq_input = QLineEdit()
        self.freq_input.setFixedWidth(80)
        self.freq_input.setAlignment(Qt.AlignLeft)
-       self.freq_input.setText(str(self.sine_freq))
+       self.freq_input.setText(str(self.sine_function.frequency))
        self.amp_input = QLineEdit()
        self.amp_input.setFixedWidth(80)
        self.amp_input.setAlignment(Qt.AlignLeft)
-       self.amp_input.setText(str(self.sine_amp))
+       self.amp_input.setText(str(self.sine_function.amplitude))
        self.phase_input = QLineEdit()
        self.phase_input.setFixedWidth(80)
        self.phase_input.setAlignment(Qt.AlignLeft)
-       self.phase_input.setText(str(self.sine_phase))
+       self.phase_input.setText(str(self.sine_function.phase))
 
        freq_layout = QHBoxLayout()
        freq_label = QLabel("Częstotliwość [Hz]:")
@@ -339,9 +424,9 @@ class Window(QMainWindow):
        sine_row_layout.addLayout(amp_layout)
        sine_row_layout.addLayout(phase_layout)
        signal_layout.addLayout(sine_row_layout)   
-       self.freq_input.editingFinished.connect(self.update_sine)
-       self.amp_input.editingFinished.connect(self.update_sine)
-       self.phase_input.editingFinished.connect(self.update_sine) 
+       self.freq_input.editingFinished.connect(lambda: self.update_sine(self.freq_input, "frequency"))
+       self.amp_input.editingFinished.connect(lambda: self.update_sine(self.amp_input, "amplitude"))
+       self.phase_input.editingFinished.connect(lambda: self.update_sine(self.phase_input, "phase")) 
 
        signal_layout.addWidget(self.square_button)
        signal_layout.addWidget(self.triangle_button)
@@ -350,7 +435,8 @@ class Window(QMainWindow):
        signal_group_box.setLayout(signal_layout)
 
        menu_view.addWidget(signal_group_box)
-       menu_view.addWidget(set_b)
+       menu_view.addWidget(self.set_parameters_button)
+       menu_view.addWidget(self.simulate_button)
        menu_view.addWidget(back_b)
 
 
@@ -358,25 +444,13 @@ class Window(QMainWindow):
        menu_widget.setLayout(menu_view)
        self.setCentralWidget(menu_widget)
 
-    # tf coefficiants for easy access 
-    def get_tf_coefficients(self):
-        numerator = [ self.a3, self.a2, self.a1, self.a0]
-        denominator = [ self.b3, self.b2, self.b1, self.b0]
-        
-        #checkes whether everything is zero 
-        if numerator and denominator:
-            self.correct_values = True
-        else:
-            self.correct_values = False
-        
-        return numerator, denominator
+       self.signal_error_label = QLabel("")
+       self.signal_error_label.setStyleSheet("color: red")
+       self.transfer_error_label = QLabel("")
+       self.transfer_error_label.setStyleSheet("color: red")
+       menu_view.addWidget(self.transfer_error_label)
+       menu_view.addWidget(self.signal_error_label)
     
-    # Poles and zeros
-    """def get_poles_and_zeros(self):
-        #Obv this will need a proper function
-        poles = [1, 10, 100]
-        zeros = [5,4]
-        return poles, zeros"""
     
 
     def simulation(self):
@@ -390,26 +464,26 @@ class Window(QMainWindow):
         back_b.clicked.connect(self.menu_display)
 
         simulation_view.addWidget(title)
-        simulation_view.addWidget(back_b)
 
         simulation_widget = QWidget()
         simulation_widget.setLayout(simulation_view)
         self.setCentralWidget(simulation_widget)
 
-        # Bode plot part
-        numerator,denominator = self.get_tf_coefficients()
+        try:
+            self.bode = BodePlot(self.tf_object)
+            simulation_view.addWidget(self.bode.canvas)
+
+            stability = QLabel(f"System stabilny: {self.bode.stable}")
+            stability.setAlignment(Qt.AlignCenter) 
+            simulation_view.addWidget(stability)
         
-        self.bode = BodePlot(numerator, denominator)
+        except ValueError as e:
+            error_label = QLabel(f"Błąd: {e}")
+            error_label.setStyleSheet("color: red")
+            simulation_view.addWidget(error_label)
 
-        simulation_view.addWidget(self.bode.canvas)
-
-        stability = QLabel(f"System stabilny: {self.bode.stable}")
-
-        stability.setAlignment(Qt.AlignCenter) 
-        simulation_view.addWidget(stability)
-
-    
-    
+        simulation_view.addWidget(back_b)
+          
 #run
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -417,30 +491,4 @@ if __name__ == "__main__":
     windowapp.show()
     sys.exit(app.exec_())
 
-"""
-class input signal:
-    def sin():
-    #ustawienie parametrów sinusoidy
-
-    def square():
-    
-    def triangle():
-    
-    def input_plot():
-    #rysowanie sygnały wejściowego
-    
-
-class output_signal:
-    def output_s():
-    #wyjście w dziedzinie operatorowej znając G(s) i U(s)
-
-    def differentiation():
-    #różniczkowanie metodą numeryczną do uzyskania odpowiedzi w dziedzinie czasu
-
-    def output_plot():
-    #rysowanie sygnału wyjściowego
-
-    
-
-"""   
      
