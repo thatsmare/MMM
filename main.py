@@ -84,6 +84,7 @@ class ObjectTransfer:
 
 class InputSquareFunction:
     def __init__(self, signal_type="square"):
+        self.signal_type = signal_type
     
     def square_transfer_function(self):
         return square_transfer
@@ -92,6 +93,7 @@ class InputSquareFunction:
 
 class InputTriangleFunction:
     def __init__(self, signal_type="triangle"):
+        self.signal_type = signal_type
         
     def triangle_transfer(self):
         return triagnle_transfer
@@ -238,12 +240,25 @@ class Window(QMainWindow):
         self.update_simulate_button_state()
 
     def update_selected_signal(self):
-        if self.sinus_button.isChecked():
+        if self.sine_button.isChecked():
             self.selected_signal = "sine"
         elif self.square_button.isChecked():
             self.selected_signal = "square"
         elif self.triangle_button.isChecked():
             self.selected_signal = "triangle"
+
+    def _labeled_input(self, label_text, widget):
+        layout = QHBoxLayout()
+        layout.setAlignment(Qt.AlignLeft)
+        layout.addWidget(QLabel(label_text))
+        layout.addWidget(widget)
+        layout.addStretch()
+        return layout
+    
+    def update_signal_param_visibility(self):
+        self.sine_params.setVisible(self.sine_button.isChecked())
+        self.square_params.setVisible(self.square_button.isChecked())
+        self.triangle_params.setVisible(self.triangle_button.isChecked())
 
     def start_menu(self):
         layout = QVBoxLayout()
@@ -291,154 +306,114 @@ class Window(QMainWindow):
        menu_view.addWidget(QLabel("Numerator of G :"))
        self.numerator_a3_input.setFixedWidth(80)
        self.numerator_a3_input.editingFinished.connect(lambda: self.update_coefficient(self.numerator_a3_input, "a3"))
-       a3_layout = QHBoxLayout()
-       a3_layout.setAlignment(Qt.AlignLeft)
-       a3_layout.addWidget(QLabel("a3:"))
-       a3_layout.addWidget(self.numerator_a3_input)
-       a3_layout.addStretch()
-       menu_view.addLayout(a3_layout)
+       menu_view.addLayout(self._labeled_input("a3:", self.numerator_a3_input))
 
        self.numerator_a2_input.setFixedWidth(80)
        self.numerator_a2_input.editingFinished.connect(lambda: self.update_coefficient(self.numerator_a2_input, "a2"))
-       a2_layout = QHBoxLayout()
-       a2_layout.setAlignment(Qt.AlignLeft)
-       a2_layout.addWidget(QLabel("a2:"))
-       a2_layout.addWidget(self.numerator_a2_input)
-       a2_layout.addStretch()
-       menu_view.addLayout(a2_layout)
+       menu_view.addLayout(self._labeled_input("a2:", self.numerator_a2_input))
 
        self.numerator_a1_input.setFixedWidth(80)
        self.numerator_a1_input.editingFinished.connect(lambda: self.update_coefficient(self.numerator_a1_input, "a1"))
-       a1_layout = QHBoxLayout()
-       a1_layout.setAlignment(Qt.AlignLeft)
-       a1_layout.addWidget(QLabel("a1:"))
-       a1_layout.addWidget(self.numerator_a1_input)
-       a1_layout.addStretch()
-       menu_view.addLayout(a1_layout)
+       menu_view.addLayout(self._labeled_input("a1:", self.numerator_a1_input))
 
        self.numerator_a0_input.setFixedWidth(80)
        self.numerator_a0_input.editingFinished.connect(lambda: self.update_coefficient(self.numerator_a0_input, "a0"))
-       a0_layout = QHBoxLayout()
-       a0_layout.setAlignment(Qt.AlignLeft)
-       a0_layout.addWidget(QLabel("a0:"))
-       a0_layout.addWidget(self.numerator_a0_input)
-       a0_layout.addStretch()
-       menu_view.addLayout(a0_layout)
+       menu_view.addLayout(self._labeled_input("a0:", self.numerator_a0_input))
 
        menu_view.addWidget(QLabel("Denominator of G :"))
        self.denominator_b4_input.setFixedWidth(80)
        self.denominator_b4_input.editingFinished.connect(lambda: self.update_coefficient(self.denominator_b4_input, "b4"))
-       b4_layout = QHBoxLayout()
-       b4_layout.setAlignment(Qt.AlignLeft)
-       b4_layout.addWidget(QLabel("b4:"))
-       b4_layout.addWidget(self.denominator_b4_input)
-       b4_layout.addStretch()
-       menu_view.addLayout(b4_layout)
+       menu_view.addLayout(self._labeled_input("b4:", self.denominator_b4_input))
 
        self.denominator_b3_input.setFixedWidth(80)
        self.denominator_b3_input.editingFinished.connect(lambda: self.update_coefficient(self.denominator_b3_input, "b3"))
-       b3_layout = QHBoxLayout()
-       b3_layout.setAlignment(Qt.AlignLeft)
-       b3_layout.addWidget(QLabel("b3:"))
-       b3_layout.addWidget(self.denominator_b3_input)
-       b3_layout.addStretch()
-       menu_view.addLayout(b3_layout)
+       menu_view.addLayout(self._labeled_input("b3:", self.denominator_b3_input))
 
        self.denominator_b2_input.setFixedWidth(80)
        self.denominator_b2_input.editingFinished.connect(lambda: self.update_coefficient(self.denominator_b2_input, "b2"))
-       b2_layout = QHBoxLayout()
-       b2_layout.setAlignment(Qt.AlignLeft)
-       b2_layout.addWidget(QLabel("b2:"))
-       b2_layout.addWidget(self.denominator_b2_input)
-       b2_layout.addStretch()
-       menu_view.addLayout(b2_layout)
+       menu_view.addLayout(self._labeled_input("b2:", self.denominator_b2_input))
 
        self.denominator_b1_input.setFixedWidth(80)
        self.denominator_b1_input.editingFinished.connect(lambda: self.update_coefficient(self.denominator_b1_input, "b1"))
-       b1_layout = QHBoxLayout()
-       b1_layout.setAlignment(Qt.AlignLeft)
-       b1_layout.addWidget(QLabel("b1:"))
-       b1_layout.addWidget(self.denominator_b1_input)
-       b1_layout.addStretch()
-       menu_view.addLayout(b1_layout)
+       menu_view.addLayout(self._labeled_input("b1:", self.denominator_b1_input))
 
        self.denominator_b0_input.setFixedWidth(80)
        self.denominator_b0_input.editingFinished.connect(lambda: self.update_coefficient(self.denominator_b0_input, "b0"))
-       b0_layout = QHBoxLayout()
-       b0_layout.setAlignment(Qt.AlignLeft)
-       b0_layout.addWidget(QLabel("b0:"))
-       b0_layout.addWidget(self.denominator_b0_input)
-       b0_layout.addStretch()
-       menu_view.addLayout(b0_layout)
+       menu_view.addLayout(self._labeled_input("b0:", self.denominator_b0_input))
 
        menu_view.addWidget(QLabel("<h3>Input signal</h3>"))
        signal_group_box = QGroupBox("Wybór sygnału pobudzającego")
        signal_layout = QVBoxLayout()
 
-       self.sinus_button = QRadioButton("Sine wave")
+       self.sine_button = QRadioButton("Sine wave")
        self.square_button = QRadioButton("Square signal")
        self.triangle_button = QRadioButton("Triangle wave")
 
        if self.selected_signal == "sine":
-            self.sinus_button.setChecked(True)
+            self.sine_button.setChecked(True)
        elif self.selected_signal == "square":
             self.square_button.setChecked(True)
        elif self.selected_signal == "triangle":
             self.triangle_button.setChecked(True)
-       #self.sinus_button.setChecked(True)
-       self.sinus_button.toggled.connect(self.update_selected_signal)
-       self.square_button.toggled.connect(self.update_selected_signal)
-       self.triangle_button.toggled.connect(self.update_selected_signal)
+       self.sine_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
+       self.square_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
+       self.triangle_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
 
-       sine_row_layout = QHBoxLayout()
-       self.freq_input = QLineEdit()
-       self.freq_input.setFixedWidth(80)
-       self.freq_input.setAlignment(Qt.AlignLeft)
-       self.freq_input.setText(str(self.sine_function.frequency))
-       self.amp_input = QLineEdit()
-       self.amp_input.setFixedWidth(80)
-       self.amp_input.setAlignment(Qt.AlignLeft)
-       self.amp_input.setText(str(self.sine_function.amplitude))
-       self.phase_input = QLineEdit()
-       self.phase_input.setFixedWidth(80)
-       self.phase_input.setAlignment(Qt.AlignLeft)
-       self.phase_input.setText(str(self.sine_function.phase))
-
-       freq_layout = QHBoxLayout()
-       freq_label = QLabel("Częstotliwość [Hz]:")
-       freq_layout.addWidget(freq_label)
-       freq_layout.addWidget(self.freq_input)
-       freq_layout.addStretch()
-       amp_layout = QHBoxLayout()
-       amp_label = QLabel("Amplituda [V]:")
-       amp_layout.addWidget(amp_label)
-       amp_layout.addWidget(self.amp_input)
-       amp_layout.addStretch()
-       phase_layout = QHBoxLayout()
-       phase_label = QLabel("Przesunięcie fazowe [rad]:")
-       phase_layout.addWidget(phase_label)
-       phase_layout.addWidget(self.phase_input)
-       phase_layout.addStretch()
-       sine_row_layout.addWidget(self.sinus_button)
-       sine_row_layout.addLayout(freq_layout)
-       sine_row_layout.addLayout(amp_layout)
-       sine_row_layout.addLayout(phase_layout)
-       signal_layout.addLayout(sine_row_layout)   
+       #Sine parameters
+       self.sine_params = QWidget()
+       sine_layout = QVBoxLayout()
+       self.freq_input = QLineEdit(str(self.sine_function.frequency))
+       self.amp_input = QLineEdit(str(self.sine_function.amplitude))
+       self.phase_input = QLineEdit(str(self.sine_function.phase))
+       for w in [self.freq_input, self.amp_input, self.phase_input]:
+           w.setFixedWidth(80)
+           w.setAlignment(Qt.AlignLeft)
        self.freq_input.editingFinished.connect(lambda: self.update_sine(self.freq_input, "frequency"))
        self.amp_input.editingFinished.connect(lambda: self.update_sine(self.amp_input, "amplitude"))
-       self.phase_input.editingFinished.connect(lambda: self.update_sine(self.phase_input, "phase")) 
+       self.phase_input.editingFinished.connect(lambda: self.update_sine(self.phase_input, "phase"))
+       sine_layout.addLayout(self._labeled_input("Częstotliwość [Hz]:", self.freq_input))
+       sine_layout.addLayout(self._labeled_input("Amplituda [V]:", self.amp_input))
+       sine_layout.addLayout(self._labeled_input("Przesunięcie fazowe [rad]:", self.phase_input))
+       self.sine_params.setLayout(sine_layout)
 
+       #Square parameters
+       self.square_params = QWidget()
+       square_layout = QVBoxLayout()
+       self.square_amp_input = QLineEdit("1.0")
+       self.square_freq_input = QLineEdit("1.0")
+       self.square_amp_input.setFixedWidth(80)
+       self.square_freq_input.setFixedWidth(80)
+       square_layout.addLayout(self._labeled_input("Amplituda [V]:", self.square_amp_input))
+       square_layout.addLayout(self._labeled_input("Częstotliwość [Hz]:", self.square_freq_input))
+       self.square_params.setLayout(square_layout)
+
+       #Triangle params
+       self.triangle_params = QWidget()
+       triangle_layout = QVBoxLayout()
+       self.triangle_amp_input = QLineEdit("1.0")
+       self.triangle_freq_input = QLineEdit("1.0")
+       self.triangle_amp_input.setFixedWidth(80)
+       self.triangle_freq_input.setFixedWidth(80)
+       triangle_layout.addLayout(self._labeled_input("Amplituda [V]:", self.triangle_amp_input))
+       triangle_layout.addLayout(self._labeled_input("Częstotliwość [Hz]:", self.triangle_freq_input))
+       self.triangle_params.setLayout(triangle_layout)
+
+       signal_layout.addWidget(self.sine_button)
+       signal_layout.addWidget(self.sine_params)
        signal_layout.addWidget(self.square_button)
+       signal_layout.addWidget(self.square_params)
        signal_layout.addWidget(self.triangle_button)
-
+       signal_layout.addWidget(self.triangle_params)
 
        signal_group_box.setLayout(signal_layout)
-
        menu_view.addWidget(signal_group_box)
+
+       #Show only selected signal parameters
+       self.update_signal_param_visibility()
+
        menu_view.addWidget(self.set_parameters_button)
        menu_view.addWidget(self.simulate_button)
        menu_view.addWidget(back_b)
-
 
        menu_widget = QWidget()
        menu_widget.setLayout(menu_view)
@@ -450,8 +425,7 @@ class Window(QMainWindow):
        self.transfer_error_label.setStyleSheet("color: red")
        menu_view.addWidget(self.transfer_error_label)
        menu_view.addWidget(self.signal_error_label)
-    
-    
+
 
     def simulation(self):
 
