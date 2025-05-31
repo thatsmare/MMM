@@ -9,6 +9,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from scipy.signal import TransferFunction
 from scipy.signal import freqs
+from scipy.signal import sawtooth
 
 
 class ObjectTransfer:
@@ -32,7 +33,7 @@ class ObjectTransfer:
        try:
             value = float(value)
        except ValueError:
-            raise ValueError(f"{attr_name.capitalize()} musi być liczbą.")
+            raise ValueError(f"{attr_name.capitalize()} must be a number.")
        setattr(self, attr_name, value)
         
     def correct_values(self):
@@ -44,7 +45,7 @@ class ObjectTransfer:
     
     def get_tf(self):
         if not self.correct_values():
-            raise ValueError("Nieprawidłowa transmitancja obiektu")
+            raise ValueError("Incorrect transfer function")
         num, den = self.get_tf_coefficients()
         return TransferFunction(num, den)
     
@@ -54,10 +55,8 @@ class ObjectTransfer:
       return list(tf.zeros), list(tf.poles)
     
 """class OutputCompute:
-    def __init__(self, signal_type, tf_object):
-        self.sine = InputSineFunction()
-        self.square = InputSquareFunction()
-        self.triangle = InputTrianfleFunction()
+    def __init__(self, signal_type, tf_object, input):
+        self.input = input
         self.tf_object = tf_object
         if signal_type == "sine":
             self.num_u, self.den_u = self.sine.sine_transfer()
@@ -79,56 +78,108 @@ class ObjectTransfer:
 
     def differentation_rk4(self):
         
-    def output_plot(self):
+    def output_plot(self):"""
 
 
 class InputSquareFunction:
     def __init__(self, signal_type="square"):
         self.signal_type = signal_type
     
-    def square_transfer_function(self):
+    """def square_transfer_function(self):
         return square_transfer
     
-    def square_input_plot(self):
+    def square_input_plot(self):"""
 
-class InputTriangleFunction:
-    def __init__(self, signal_type="triangle"):
-        self.signal_type = signal_type
-        
-    def triangle_transfer(self):
-        return triagnle_transfer
-        
-    def triangle_input_plot(self):"""
-    
-class InputSineFunction:
-    def __init__(self, signal_type="sine", amplitude=1.0, frequency=1.0, phase=0.0):
+class InputFunction:
+    def __init__(self, signal_type, amplitude=1.0, frequency=1.0, phase=0.0, duration=2.0, sample_rate=1000):
         self.signal_type = signal_type
         self.amplitude = amplitude
         self.frequency = frequency
         self.phase = phase
+        self.duration = duration
+        self.sample_rate = sample_rate
+
+    def update_input_function(self, attr_name, value):
+        try:
+            value = float(value)
+        except ValueError:
+            raise ValueError(f"{attr_name.capitalize()} must be a number.")
+ 
+        if attr_name == "frequency" and value <= 0:
+            raise ValueError("Wrong frequency.")
+        if attr_name == "amplitude" and value <= 0:
+            raise ValueError("Wrong amplitude.")
+        if attr_name == "phase" and not (-np.pi <= value <= np.pi):
+            raise ValueError("Wrong phase [-pi,pi].")
+        setattr(self, attr_name, value)
+
+    def input_generate(self):
+        if self.signal_type == "sawtooth":
+            t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
+            y = self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase)
+            return t,y
+        elif self.signal_type == "sine":
+            t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
+            y = self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
+            return t, y
+
+    def input_plot(self):
+        t, y = self.input_generate()
+        self.figure = Figure(figsize=(6, 4))
+        self.canvas = FigureCanvas(self.figure)
+        ax = self.figure.add_subplot(111)  
+
+        ax.plot(t, y)
+        ax.set_title("Input {self.signal_type} signal")
+        ax.set_xlabel("Time [s]")
+        ax.set_ylabel("Amplitude")
+        ax.grid(True)
+        self.canvas.draw()
+        return self.canvas        
+    
+"""class InputSineFunction:
+    def __init__(self, signal_type="sine", amplitude=1.0, frequency=1.0, phase=0.0, duration=1.0, sample_rate=1000):
+        self.signal_type = signal_type
+        self.amplitude = amplitude
+        self.frequency = frequency
+        self.phase = phase
+        self.duration = duration
+        self.sample_rate = sample_rate
 
     def update_sine(self, attr_name, value):
         try:
             value = float(value)
         except ValueError:
-            raise ValueError(f"{attr_name.capitalize()} musi być liczbą.")
+            raise ValueError(f"{attr_name.capitalize()} must be a number.")
  
         if attr_name == "frequency" and value <= 0:
-            raise ValueError("Częstotliwość musi być większa niż zero.")
+            raise ValueError("Wrong frequency.")
         if attr_name == "amplitude" and value <= 0:
-            raise ValueError("Amplituda musi być większa niż zero.")
+            raise ValueError("Wrong amplitude.")
         if attr_name == "phase" and not (-np.pi <= value <= np.pi):
-            raise ValueError("Faza musi być w zakresie od -π do +π.")
+            raise ValueError("Wrong phase [-pi,pi].")
 
         setattr(self, attr_name, value)
 
-    """def sine_transfer_function(self):
-        sine_transfer =  #tu bedzie transmitancja sinusa
-        return sine_transfer
+    def sine_generate(self):
+        t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
+        y = self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
+        return t, y
         
-        def sine_input_plot(self):"""
+    def sine_input_plot(self):
+        t, y = self.sine_generate()
+        self.figure = Figure(figsize=(6, 4))
+        self.canvas = FigureCanvas(self.figure)
+        ax = self.figure.add_subplot(111)  
 
-       
+        ax.plot(t, y)
+        ax.set_title("Input sine signal")
+        ax.set_xlabel("Time [s]")
+        ax.set_ylabel("Amplitude")
+        ax.grid(True)
+        self.canvas.draw()
+        return self.canvas"""
+        
 # Plotting the Bode
 class BodePlot:
     def __init__(self, tf_object):
@@ -203,7 +254,9 @@ class Window(QMainWindow):
     def __init__(self):
         super().__init__()
         self.tf_object = ObjectTransfer()
-        self.sine_function = InputSineFunction()
+        self.selected_signal = "sine"
+        self.input_function = InputFunction(self.selected_signal)
+        self.square_function = InputSquareFunction()
         self.setWindowTitle("Transfer Function I/O Illustration")
         self.setGeometry(100, 100, 800, 800)
         self.transfer_valid = True
@@ -227,10 +280,10 @@ class Window(QMainWindow):
             self.transfer_error_label.setText(str(e))
 
 
-    def update_sine(self, line_edit, attr_name):
+    def update_input(self, line_edit, attr_name):
         value = line_edit.text()
         try:
-            self.sine_function.update_sine(attr_name, value)
+            self.input_function.update_input_function(attr_name, value)
             self.signal_error_label.setText("")
             self.signal_valid = True
 
@@ -244,8 +297,8 @@ class Window(QMainWindow):
             self.selected_signal = "sine"
         elif self.square_button.isChecked():
             self.selected_signal = "square"
-        elif self.triangle_button.isChecked():
-            self.selected_signal = "triangle"
+        elif self.sawtooth_button.isChecked():
+            self.selected_signal = "sawtooth"
 
     def _labeled_input(self, label_text, widget):
         layout = QHBoxLayout()
@@ -258,7 +311,7 @@ class Window(QMainWindow):
     def update_signal_param_visibility(self):
         self.sine_params.setVisible(self.sine_button.isChecked())
         self.square_params.setVisible(self.square_button.isChecked())
-        self.triangle_params.setVisible(self.triangle_button.isChecked())
+        self.sawtooth_params.setVisible(self.sawtooth_button.isChecked())
 
     def start_menu(self):
         layout = QVBoxLayout()
@@ -282,8 +335,6 @@ class Window(QMainWindow):
         widget = QWidget()
         widget.setLayout(layout)
         self.setCentralWidget(widget)
-
-        self.selected_signal = "sine"
 
     def menu_display(self):
        menu_view = QVBoxLayout()
@@ -342,68 +393,86 @@ class Window(QMainWindow):
        menu_view.addLayout(self._labeled_input("b0:", self.denominator_b0_input))
 
        menu_view.addWidget(QLabel("<h3>Input signal</h3>"))
-       signal_group_box = QGroupBox("Wybór sygnału pobudzającego")
+       signal_group_box = QGroupBox("Input singnal choice")
        signal_layout = QVBoxLayout()
 
        self.sine_button = QRadioButton("Sine wave")
        self.square_button = QRadioButton("Square signal")
-       self.triangle_button = QRadioButton("Triangle wave")
+       self.sawtooth_button = QRadioButton("Sawtooth signal")
 
        if self.selected_signal == "sine":
             self.sine_button.setChecked(True)
        elif self.selected_signal == "square":
             self.square_button.setChecked(True)
-       elif self.selected_signal == "triangle":
-            self.triangle_button.setChecked(True)
+       elif self.selected_signal == "sawtooth":
+            self.sawtooth_button.setChecked(True)
        self.sine_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
        self.square_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
-       self.triangle_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
+       self.sawtooth_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
 
        #Sine parameters
        self.sine_params = QWidget()
        sine_layout = QVBoxLayout()
-       self.freq_input = QLineEdit(str(self.sine_function.frequency))
-       self.amp_input = QLineEdit(str(self.sine_function.amplitude))
-       self.phase_input = QLineEdit(str(self.sine_function.phase))
-       for w in [self.freq_input, self.amp_input, self.phase_input]:
+       self.sine_freq_input = QLineEdit(str(self.input_function.frequency))
+       self.sine_amp_input = QLineEdit(str(self.input_function.amplitude))
+       self.sine_phase_input = QLineEdit(str(self.input_function.phase))
+       for w in [self.sine_freq_input, self.sine_amp_input, self.sine_phase_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
-       self.freq_input.editingFinished.connect(lambda: self.update_sine(self.freq_input, "frequency"))
-       self.amp_input.editingFinished.connect(lambda: self.update_sine(self.amp_input, "amplitude"))
-       self.phase_input.editingFinished.connect(lambda: self.update_sine(self.phase_input, "phase"))
-       sine_layout.addLayout(self._labeled_input("Częstotliwość [Hz]:", self.freq_input))
-       sine_layout.addLayout(self._labeled_input("Amplituda [V]:", self.amp_input))
-       sine_layout.addLayout(self._labeled_input("Przesunięcie fazowe [rad]:", self.phase_input))
+       self.sine_freq_input.editingFinished.connect(lambda: self.update_input(self.sine_freq_input, "frequency"))
+       self.sine_amp_input.editingFinished.connect(lambda: self.update_input(self.sine_amp_input, "amplitude"))
+       self.sine_phase_input.editingFinished.connect(lambda: self.update_input(self.sine_phase_input, "phase"))
+       sine_layout.addLayout(self._labeled_input("Frequency [Hz]:", self.sine_freq_input))
+       sine_layout.addLayout(self._labeled_input("Amplitude [V]:", self.sine_amp_input))
+       sine_layout.addLayout(self._labeled_input("Phase [rad]:", self.sine_phase_input))
        self.sine_params.setLayout(sine_layout)
 
        #Square parameters
        self.square_params = QWidget()
        square_layout = QVBoxLayout()
+       """self.square_freq_input = QLineEdit(str(self.square_function.frequency))
+       self.square_amp_input = QLineEdit(str(self.square_function.amplitude))
+       self.square_phase_input = QLineEdit(str(self.square_function.phase))
+       for w in [self.square_freq_input, self.square_amp_input, self.square_phase_input]:
+           w.setFixedWidth(80)
+           w.setAlignment(Qt.AlignLeft)
+       self.square_freq_input.editingFinished.connect(lambda: self.update_square(self.square_freq_input, "frequency"))
+       self.square_amp_input.editingFinished.connect(lambda: self.update_square(self.square_amp_input, "amplitude"))
+       self.square_phase_input.editingFinished.connect(lambda: self.update_square(self.square_phase_input, "phase"))
+       square_layout.addLayout(self._labeled_input("Amplitude [V]:", self.square_amp_input))
+       square_layout.addLayout(self._labeled_input("Frequency [Hz]:", self.square_freq_input))
+       square_layout.addLayout(self._labeled_input("Phase [rad]:", self.square_phase_input))"""
        self.square_amp_input = QLineEdit("1.0")
        self.square_freq_input = QLineEdit("1.0")
        self.square_amp_input.setFixedWidth(80)
        self.square_freq_input.setFixedWidth(80)
-       square_layout.addLayout(self._labeled_input("Amplituda [V]:", self.square_amp_input))
-       square_layout.addLayout(self._labeled_input("Częstotliwość [Hz]:", self.square_freq_input))
+       square_layout.addLayout(self._labeled_input("Amplitude [V]:", self.square_amp_input))
+       square_layout.addLayout(self._labeled_input("Frequency [Hz]:", self.square_freq_input))
        self.square_params.setLayout(square_layout)
 
        #Triangle params
-       self.triangle_params = QWidget()
-       triangle_layout = QVBoxLayout()
-       self.triangle_amp_input = QLineEdit("1.0")
-       self.triangle_freq_input = QLineEdit("1.0")
-       self.triangle_amp_input.setFixedWidth(80)
-       self.triangle_freq_input.setFixedWidth(80)
-       triangle_layout.addLayout(self._labeled_input("Amplituda [V]:", self.triangle_amp_input))
-       triangle_layout.addLayout(self._labeled_input("Częstotliwość [Hz]:", self.triangle_freq_input))
-       self.triangle_params.setLayout(triangle_layout)
+       self.sawtooth_params = QWidget()
+       sawtooth_layout = QVBoxLayout()
+       self.sawtooth_freq_input = QLineEdit(str(self.input_function.frequency))
+       self.sawtooth_amp_input = QLineEdit(str(self.input_function.amplitude))
+       self.sawtooth_phase_input = QLineEdit(str(self.input_function.phase))
+       for w in [self.sawtooth_freq_input, self.sawtooth_amp_input, self.sawtooth_phase_input]:
+           w.setFixedWidth(80)
+           w.setAlignment(Qt.AlignLeft)
+       self.sawtooth_freq_input.editingFinished.connect(lambda: self.update_input(self.sawtooth_freq_input, "frequency"))
+       self.sawtooth_amp_input.editingFinished.connect(lambda: self.update_input(self.sawtooth_amp_input, "amplitude"))
+       self.sawtooth_phase_input.editingFinished.connect(lambda: self.update_input(self.sawtooth_phase_input, "phase"))
+       sawtooth_layout.addLayout(self._labeled_input("Amplitude [V]:", self.sawtooth_amp_input))
+       sawtooth_layout.addLayout(self._labeled_input("Frequency [Hz]:", self.sawtooth_freq_input))
+       sawtooth_layout.addLayout(self._labeled_input("Phase [rad]:", self.sawtooth_phase_input))
+       self.sawtooth_params.setLayout(sawtooth_layout)
 
        signal_layout.addWidget(self.sine_button)
        signal_layout.addWidget(self.sine_params)
        signal_layout.addWidget(self.square_button)
        signal_layout.addWidget(self.square_params)
-       signal_layout.addWidget(self.triangle_button)
-       signal_layout.addWidget(self.triangle_params)
+       signal_layout.addWidget(self.sawtooth_button)
+       signal_layout.addWidget(self.sawtooth_params)
 
        signal_group_box.setLayout(signal_layout)
        menu_view.addWidget(signal_group_box)
@@ -431,7 +500,7 @@ class Window(QMainWindow):
 
         simulation_view= QVBoxLayout()
 
-        title = QLabel("<h3>Symulacja układu</h3>")
+        title = QLabel("<h3>Simulation</h3>")
         title.setAlignment(Qt.AlignCenter)
 
         back_b = QPushButton("Back to menu")
@@ -447,15 +516,23 @@ class Window(QMainWindow):
             self.bode = BodePlot(self.tf_object)
             simulation_view.addWidget(self.bode.canvas)
 
-            stability = QLabel(f"System stabilny: {self.bode.stable}")
+            stability = QLabel(f"Stable system: {self.bode.stable}")
             stability.setAlignment(Qt.AlignCenter) 
             simulation_view.addWidget(stability)
         
         except ValueError as e:
-            error_label = QLabel(f"Błąd: {e}")
+            error_label = QLabel(f"Error: {e}")
             error_label.setStyleSheet("color: red")
             simulation_view.addWidget(error_label)
 
+        if self.selected_signal == "sine":
+            self.input = self.input_function.input_plot()
+            simulation_view.addWidget(self.input)
+        #elif self.selected_signal == "square":
+        elif self.selected_signal == "sawtooth":
+            self.input = self.input_function.input_plot()
+            simulation_view.addWidget(self.input)
+    
         simulation_view.addWidget(back_b)
           
 #run
