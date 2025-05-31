@@ -52,6 +52,51 @@ class ObjectTransfer:
       tf = self.get_tf()
       return list(tf.zeros), list(tf.poles)
     
+"""class OutputCompute:
+    def __init__(self, signal_type, tf_object):
+        self.sine = InputSineFunction()
+        self.square = InputSquareFunction()
+        self.triangle = InputTrianfleFunction()
+        self.tf_object = tf_object
+        if signal_type == "sine":
+            self.num_u, self.den_u = self.sine.sine_transfer()
+        elif signal_type == "square":
+            self.num_u, self.den_u = self.square.square_transfer()
+        elif signal_type == "triangle":
+            self.num_u, self.den_u = self.triangle.triangle_transfer()
+        else:
+            raise ValueError("Unknown signal type")
+        
+    def compute_Y(self):
+        num_G, den_G  = self.tf_object.get_tf_coefficients()
+        num_U, den_U = self.num_u, self.den_u
+
+        #transfer function of Y
+        num_Y = np.polymul(num_g, num_u)
+        den_Y = np.polymul(den_g, den_u)
+        system = TransferFunction(num_Y, den_Y)
+
+    def differentation_rk4(self):
+        
+    def output_plot(self):
+
+
+class InputSquareFunction:
+    def __init__(self, signal_type="square"):
+    
+    def square_transfer_function(self):
+        return square_transfer
+    
+    def square_input_plot(self):
+
+class InputTriangleFunction:
+    def __init__(self, signal_type="triangle"):
+        
+    def triangle_transfer(self):
+        return triagnle_transfer
+        
+    def triangle_input_plot(self):"""
+    
 class InputSineFunction:
     def __init__(self, signal_type="sine", amplitude=1.0, frequency=1.0, phase=0.0, duration=10.0, sample_rate=1000):
         self.signal_type = signal_type
@@ -77,10 +122,13 @@ class InputSineFunction:
 
         setattr(self, attr_name, value)
 
-    def generate_sine(self):
-        return self.amplitude * np.sin(2 * np.pi * self.frequency * self.t + self.phase)
-       
+    """def sine_transfer_function(self):
+        sine_transfer =  #tu bedzie transmitancja sinusa
+        return sine_transfer
+        
+        def sine_input_plot(self):"""
 
+       
 # Plotting the Bode
 class BodePlot:
     def __init__(self, tf_object):
@@ -163,6 +211,7 @@ class Window(QMainWindow):
         self.signal_error_label = QLabel("")
         self.signal_error_label.setStyleSheet("color: red")
         self.signal_valid = True 
+        self.signal_error_label_added = False
         self.start_menu()
 
     def update_coefficient(self, line_edit, attr_name):
@@ -226,6 +275,7 @@ class Window(QMainWindow):
        self.denominator_b2_input = QLineEdit(str(self.tf_object.b2))
        self.denominator_b1_input = QLineEdit(str(self.tf_object.b1))
        self.denominator_b0_input = QLineEdit(str(self.tf_object.b0))
+       self.set_parameters_button = QPushButton("Set parameters")
        self.simulate_button = QPushButton("Simulate")
        self.simulate_button.setEnabled(self.signal_valid)
        back_b = QPushButton("Back to start")
@@ -380,6 +430,7 @@ class Window(QMainWindow):
        signal_group_box.setLayout(signal_layout)
 
        menu_view.addWidget(signal_group_box)
+       menu_view.addWidget(self.set_parameters_button)
        menu_view.addWidget(self.simulate_button)
        menu_view.addWidget(back_b)
 
@@ -421,10 +472,7 @@ class Window(QMainWindow):
             error_label = QLabel(f"Błąd: {e}")
             error_label.setStyleSheet("color: red")
             simulation_view.addWidget(error_label)
-        
-
-    
-    
+          
 #run
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -432,30 +480,4 @@ if __name__ == "__main__":
     windowapp.show()
     sys.exit(app.exec_())
 
-"""
-class input signal:
-    def sin():
-    #ustawienie parametrów sinusoidy
-
-    def square():
-    
-    def triangle():
-    
-    def input_plot():
-    #rysowanie sygnały wejściowego
-    
-
-class output_signal:
-    def output_s():
-    #wyjście w dziedzinie operatorowej znając G(s) i U(s)
-
-    def differentiation():
-    #różniczkowanie metodą numeryczną do uzyskania odpowiedzi w dziedzinie czasu
-
-    def output_plot():
-    #rysowanie sygnału wyjściowego
-
-    
-
-"""   
      
