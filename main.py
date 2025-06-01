@@ -11,6 +11,7 @@ from scipy.signal import TransferFunction
 from scipy.signal import freqs
 from scipy.signal import sawtooth
 from scipy.signal import fftconvolve
+import sympy as sp
 
 
 class ObjectTransfer:
@@ -24,6 +25,7 @@ class ObjectTransfer:
       self.a2 = 0.0
       self.a1 = 1.0
       self.a0 = 1.0
+    
 
     def get_tf_coefficients(self):
       numerator = [self.a3, self.a2, self.a1, self.a0]
@@ -55,6 +57,35 @@ class ObjectTransfer:
       #get the poles and zeros 
       tf = self.get_tf()
       return list(tf.zeros), list(tf.poles)
+    
+    # Laplace of functions (for Y(s) = G(s)*U(s))
+    def get_sin_Laplace(self):
+        s, A, f, phase = sp.symbols('s A f phase')
+        sin_laplace = (A*(s*sp.sin(phase) + 2*np.pi*f*sp.cos(phase))/(s**2 + (2*np.pi*f)**2)) #sp for symbolic
+        return sin_laplace
+    
+    def get_square_Laplace(self):
+        s, A, f, phase = sp.symbols('s A f phase')
+        T = 1/f
+        square_laplace = (A/s)*((1-sp.exp(-s*0.5*T))/(1 - sp.exp(-s*T)))
+        return square_laplace
+    
+    def get_sawtooth_Laplace():
+        s, A, f, phase = sp.symbols('s A f phase')
+        T = 1/f
+        sawtooth_laplace = (1/(1-sp.exp(-s*T))) * (A/T)* ((1-sp.exp(-s*T))*(1 + s*T)/s**2)
+        return sawtooth_laplace
+    
+    def laplace_output(self, input, tf_object):
+        laplace_output = input * tf_object
+        return laplace_output
+    
+    # Inverse -> derivative -> plot
+    def inverse_Laplace(laplace):
+        s, t = sp.symbols('s t')
+        inverse_Laplace = sp.inverse_laplace_transform(laplace, s, t)
+        return inverse_Laplace
+
     
 
 """class OutputCompute:
@@ -311,7 +342,8 @@ class Window(QMainWindow):
 
        self.simulate_button.clicked.connect(self.simulation)
        back_b.clicked.connect(self.start_menu)
-
+       
+       # input of parameters
        menu_view.addWidget(QLabel("Numerator of G :"))
        self.numerator_a3_input.setFixedWidth(80)
        self.numerator_a3_input.editingFinished.connect(lambda: self.update_coefficient(self.numerator_a3_input, "a3"))
