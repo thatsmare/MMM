@@ -55,39 +55,21 @@ class ObjectTransfer:
       tf = self.get_tf()
       return list(tf.zeros), list(tf.poles)
     
-    # Laplace of functions (for Y(s) = G(s)*U(s))
-    def get_sin_Laplace(self):
-        s, A, f, phase = sp.symbols('s A f phase')
-        sin_laplace = (A*(s*sp.sin(phase) + 2*np.pi*f*sp.cos(phase))/(s**2 + (2*np.pi*f)**2)) #sp for symbolic
-        return sin_laplace
-    
-    def get_square_Laplace(self):
-        s, A, f, phase = sp.symbols('s A f phase')
-        T = 1/f
-        square_laplace = (A/s)*((1-sp.exp(-s*0.5*T))/(1 - sp.exp(-s*T)))
-        return square_laplace
-    
-    def get_sawtooth_Laplace():
-        s, A, f, phase = sp.symbols('s A f phase')
-        T = 1/f
-        sawtooth_laplace = (1/(1-sp.exp(-s*T))) * (A/T)* ((1-sp.exp(-s*T))*(1 + s*T)/s**2)
-        return sawtooth_laplace
-    
-    def laplace_output(self, input, tf_object):
-        laplace_output = input * tf_object
-        return laplace_output
-    
-    # Inverse -> derivative -> plot
-    def inverse_Laplace(laplace):
-        s, t = sp.symbols('s t')
-        inverse_Laplace = sp.inverse_laplace_transform(laplace, s, t)
-        return inverse_Laplace
+    def get_symbolic_tf(self):
+        s = sp.Symbol('s')
+        symbolic_tf = (self.b0 + self.b1*s + self.b2*s**2 + self.b3 * s**3 + self.b4*s**4)/(self.a0 + self.a1*s + self.a2*s**2 + self.a3*s**3 + self.a4*s**4)
+        return symbolic_tf
     
 
 class OutputCompute:
-    def __init__(self, signal_type, tf_object, input):
+    def __init__(self, signal_type, tf_object, input, frequency, amplitude, phase, pulse_width):
         self.input = input
         self.tf_object = tf_object
+        self.signal_type = signal_type
+        self.frequency = frequency
+        self.amplitude = amplitude
+        self.phase = phase
+        self.pulse_width = pulse_width
 
     #input in time domain
     def input_u_t(self):
@@ -107,7 +89,44 @@ class OutputCompute:
         ax.set_ylabel("Amplitude")
         ax.grid(True)
         self.canvas.draw()
-        return self.canvas      
+        return self.canvas   
+    # Laplace of functions (for Y(s) = G(s)*U(s))
+    def get_input_laplace(self):
+        s, A, f, phase, pulse_width = sp.symbols('s A f phase pulse_width')
+        T = 1/f
+
+        match self.signal_type:
+            case "sine":
+                input_laplace = (A*(s*sp.sin(phase) + 2*np.pi*f*sp.cos(phase))/(s**2 + (2*np.pi*f)**2)) #sp for symbolic
+            case "square":
+                input_laplace = (A/s)*((1-sp.exp(-s*0.5*T))/(1 - sp.exp(-s*T)))
+            case "sawtooth":
+                input_laplace = (1/(1-sp.exp(-s*T))) * (A/T)* ((1-sp.exp(-s*T))*(1 + s*T)/s**2)
+            case "rectangle impulse":
+                input_laplace =  A/s * (1 - sp.exp(-s*pulse_width))
+            case "triangle":
+                input_laplace = A/s**2 * (1 - sp.exp(-s*T) * (s*T + 1) + sp.exp(-2*s*T) * (s*T - 1))
+            case _:
+                print("Error, could not get Laplace of input signal")
+        return input_laplace
+    
+    def laplace_output(self,Linput, tf_object):
+        return Linput*tf_object
+    
+    # Inverse -> derivative -> plot
+    def inverse_Laplace(laplace_expr):
+        s, t = sp.symbols('s t')
+        return sp.inverse_laplace_transform(laplace_expr, s, t)  
+
+    def get_output_in_t(self):
+        object_info = ObjectTransfer()
+
+        laplace = self.laplace_output(self.get_input_laplace(), object_info.get_symbolic_tf())
+        output_in_t = self.inverse_Laplace(laplace)
+        
+        output_in_t = output_in_t.subs({'A': self.amplitude, 'f': self.frequency, 'phase': self.phase, 'pulse_width': self.pulse_width})
+
+        return output_in_t 
 
 
 class InputFunction:
@@ -287,7 +306,7 @@ class BodePlot:
             ax_ph.legend()
          
         self.canvas.draw()
-      
+
 
 class Window(QMainWindow):
     def __init__(self):
