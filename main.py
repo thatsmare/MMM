@@ -57,23 +57,17 @@ class ObjectTransfer:
     
     def get_symbolic_tf(self):
         s = sp.Symbol('s')
-        symbolic_tf = (self.b0 + self.b1*s + self.b2*s**2 + self.b3 * s**3 + self.b4*s**4)/(self.a0 + self.a1*s + self.a2*s**2 + self.a3*s**3 + self.a4*s**4)
+        symbolic_tf = (self.a0 + self.a1*s + self.a2*s**2 + self.a3 * s**3)/(self.b0 + self.b1*s + self.b2*s**2 + self.b3*s**3 + self.b4*s**4)
         return symbolic_tf
     
 
 class OutputCompute:
-    def __init__(self, signal_type, tf_object, input, frequency, amplitude, phase, pulse_width):
-        self.input = input
-        self.tf_object = tf_object
+    def __init__(self, signal_type, frequency, amplitude, phase, pulse_width):
         self.signal_type = signal_type
         self.frequency = frequency
         self.amplitude = amplitude
         self.phase = phase
         self.pulse_width = pulse_width
-
-    #input in time domain
-    def input_u_t(self):
-        self.u, self.t = input.input_generate()
     
     def differentation_rk4(self):
         return self.y
@@ -82,7 +76,6 @@ class OutputCompute:
         self.figure = Figure(figsize=(6, 4))
         self.canvas = FigureCanvas(self.figure)
         ax = self.figure.add_subplot(111)  
-
         ax.plot(self.t, self.y)
         ax.set_title("Output signal")
         ax.set_xlabel("Time [s]")
@@ -90,6 +83,7 @@ class OutputCompute:
         ax.grid(True)
         self.canvas.draw()
         return self.canvas   
+    
     # Laplace of functions (for Y(s) = G(s)*U(s))
     def get_input_laplace(self):
         s, A, f, phase, pulse_width = sp.symbols('s A f phase pulse_width')
@@ -110,7 +104,7 @@ class OutputCompute:
                 print("Error, could not get Laplace of input signal")
         return input_laplace
     
-    def laplace_output(self,Linput, tf_object):
+    def laplace_output(self, Linput, tf_object):
         return Linput*tf_object
     
     # Inverse -> derivative -> plot
@@ -130,7 +124,7 @@ class OutputCompute:
 
 
 class InputFunction:
-    def __init__(self, signal_type, amplitude=1.0, frequency=1.0, phase=0.0, duration=2.0, sample_rate=1000, pulse_width=1.0):
+    def __init__(self, signal_type, amplitude=1.0, frequency=1.0, phase=0.0, duration=10.0, sample_rate=1000, pulse_width=1.0):
         self.signal_type = signal_type
         self.amplitude = amplitude
         self.frequency = frequency
@@ -183,12 +177,13 @@ class InputFunction:
         self.figure = Figure(figsize=(6, 4))
         self.canvas = FigureCanvas(self.figure)
         ax = self.figure.add_subplot(111)  
-
         ax.plot(t, y)
         ax.set_title(f"Input {self.signal_type} signal")
         ax.set_xlabel("Time [s]")
         ax.set_ylabel("Amplitude")
         ax.grid(True)
+        if self.signal_type == "rectangle impulse":
+            ax.set_xlim(0, self.pulse_width + 1)
         self.canvas.draw()
         return self.canvas        
         
@@ -314,6 +309,7 @@ class Window(QMainWindow):
         self.tf_object = ObjectTransfer()
         self.selected_signal = "sine"
         self.input_function = InputFunction(self.selected_signal)
+        self.output = OutputCompute(self.selected_signal, self.input_function.frequency, self.input_function.amplitude, self.input_function.phase, self.input_function.pulse_width)
         self.setWindowTitle("Transfer Function I/O Illustration")
         self.setGeometry(100, 100, 800, 800)
         self.transfer_valid = True
