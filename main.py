@@ -114,14 +114,14 @@ class OutputCompute:
 
     def get_differential_equation(self):
         # symbols needed, y,y1,.../u,u1,... next derivatives(pochodne)
-        y_diff = [
+        self.y_diff = [
             sp.Symbol('y'),
             sp.Symbol('y1'),
             sp.Symbol('y2'),
             sp.Symbol('y3'),
             sp.Symbol('y4'),
             ]
-        u_diff = [
+        self.u_diff = [
             sp.Symbol('u'),
             sp.Symbol('u1'),
             sp.Symbol('u2'),
@@ -129,19 +129,32 @@ class OutputCompute:
             ]
         
         object_info = ObjectTransfer() # for tf
-        #input_info = InputFunction()    # for u(t)
-        
+                
         numerator, denominator = object_info.get_tf_coefficients()
         
         # left side of the equation - all y(t)
-        y_side = sum(coefficient *y_diff[i]  for i, coefficient in enumerate(reversed(denominator)))
+        y_side = sum(coefficient *self.y_diff[i]  for i, coefficient in enumerate(reversed(denominator)))
         
         #Right side of the equation - all u(t)
-        u_side = sum(coefficient *u_diff[i]  for i, coefficient in enumerate(reversed(numerator)))        
+        u_side = sum(coefficient *self.u_diff[i]  for i, coefficient in enumerate(reversed(numerator)))        
         
-        differentail_equation = sp.Eq(y_side, u_side)
+        differential_equation = sp.Eq(y_side, u_side)
         
-        return differentail_equation
+        return differential_equation 
+    
+    def get_output(self, diff_equation):
+        #self.y_diff, self_u_diff #symbols
+        input_info = InputFunction()    # for u(t)
+        
+        u = input_info.input_symbolic #SYMBOLIC t
+        u1 = 1   #diff_function(u,t)
+        u2 = 2   #diff_function(u1,t)
+        u3 = 3   #diff_function(u2,t)
+        u_symbolic = [u, u1, u2, u3]
+        
+        diff_equation = diff_equation.subs(self.u_diff, u_symbolic)
+              
+    
 
 
 class InputFunction:
