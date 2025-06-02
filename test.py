@@ -7,9 +7,11 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 from scipy.signal import TransferFunction
 from scipy.signal import freqs
 from scipy.signal import sawtooth
+import sympy as sp
 import sympy as sp
 
 
@@ -60,8 +62,19 @@ class ObjectTransfer:
         symbolic_tf = (self.a0 + self.a1*s + self.a2*s**2 + self.a3 * s**3)/(self.b0 + self.b1*s + self.b2*s**2 + self.b3*s**3 + self.b4*s**4)
         return symbolic_tf
     
+    def get_symbolic_tf(self):
+        s = sp.Symbol('s')
+        symbolic_tf = (self.a0 + self.a1*s + self.a2*s**2 + self.a3 * s**3)/(self.b0 + self.b1*s + self.b2*s**2 + self.b3*s**3 + self.b4*s**4)
+        return symbolic_tf
+    
 
 class OutputCompute:
+    def __init__(self, signal_type, frequency, amplitude, phase, pulse_width):
+        self.signal_type = signal_type
+        self.frequency = frequency
+        self.amplitude = amplitude
+        self.phase = phase
+        self.pulse_width = pulse_width
     def __init__(self, signal_type, frequency, amplitude, phase, pulse_width):
         self.signal_type = signal_type
         self.frequency = frequency
@@ -126,6 +139,7 @@ class OutputCompute:
 
 class InputFunction:
     def __init__(self, signal_type, amplitude=1.0, frequency=1.0, phase=0.0, duration=10.0, sample_rate=1000, pulse_width=1.0):
+    def __init__(self, signal_type, amplitude=1.0, frequency=1.0, phase=0.0, duration=10.0, sample_rate=1000, pulse_width=1.0):
         self.signal_type = signal_type
         self.amplitude = amplitude
         self.frequency = frequency
@@ -183,6 +197,8 @@ class InputFunction:
         ax.set_xlabel("Time [s]")
         ax.set_ylabel("Amplitude")
         ax.grid(True)
+        if self.signal_type == "rectangle impulse":
+            ax.set_xlim(0, self.pulse_width + 1)
         if self.signal_type == "rectangle impulse":
             ax.set_xlim(0, self.pulse_width + 1)
         self.canvas.draw()
@@ -277,6 +293,21 @@ class BodePlot:
         else:
             self.stable = False"""
 
+        """#STABILITY
+        to_zero = np.abs(phase + 180) #we're looking for phase at -180 so minimazing it to 0
+        phase_180_idx = np.argmin(to_zero)
+        magnitude_180 = magnitude[phase_180_idx]
+        gain_margin = -magnitude_180 #zapas wzmocnienia
+
+        gain_0_idx = np.argmin(np.abs(magnitude))
+        phase_0 = phase[gain_0_idx]
+        phase_margin = 180 + phase_0   
+
+        if gain_margin and phase_margin > 0:
+            self.stable = True
+        else:
+            self.stable = False"""
+
         #Plotting magnitude
         ax_mag.set_title("Magnitude Bode Plot")
         ax_mag.set_xlabel("Frequency [rad/s]")
@@ -304,12 +335,14 @@ class BodePlot:
         self.canvas.draw()
 
 
+
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
         self.tf_object = ObjectTransfer()
         self.selected_signal = "sine"
         self.input_function = InputFunction(self.selected_signal)
+        self.output = OutputCompute(self.selected_signal, self.input_function.frequency, self.input_function.amplitude, self.input_function.phase, self.input_function.pulse_width)
         self.output = OutputCompute(self.selected_signal, self.input_function.frequency, self.input_function.amplitude, self.input_function.phase, self.input_function.pulse_width)
         self.setWindowTitle("Transfer Function I/O Illustration")
         self.setGeometry(100, 100, 800, 800)
@@ -392,12 +425,21 @@ class Window(QMainWindow):
         self.rec_imp_params.setVisible(self.rec_imp_button.isChecked())
         self.triangle_params.setVisible(self.triangle_button.isChecked())
 
+    def create_latex_canvas(self, expr):
+        fig, ax = plt.subplots(figsize=(6, 2), dpi=100)
+        ax.axis("off")
+        latex_str = r"$G(s) = " + sp.latex(expr) + r"$"
+        ax.text(0.5, 0.5, latex_str, fontsize=18, ha='center', va='center')
+        canvas = FigureCanvas(fig)
+        return canvas
+
     def start_menu(self):
         layout = QVBoxLayout()
         title = QLabel("<h1>Projekt 10 - implementacja symulatora układu opisanego za pomocą transmitancji</h1>")
         title.setAlignment(Qt.AlignCenter)
 
         description = QLabel("Symulator umożliwia uzyskanie odpowiedzi czasowych układu na pobudzenie sygnałem" \
+        " prostokątnym o nieskończonym czasie trwania, impulsem, sygnałem piłokształtnym, trójkątnym i sinusoidalnym o zadanych parametrach. Możliwa jest zmiana wszystkich" \
         " prostokątnym o nieskończonym czasie trwania, impulsem, sygnałem piłokształtnym, trójkątnym i sinusoidalnym o zadanych parametrach. Możliwa jest zmiana wszystkich" \
         " współczynników licznika i mianownika transmitancji. Program wykreśla charakterystyki częstotliwościowe Bodego oraz sygnał wejściowy" \
         " i wyjściowy, na podstawie czego określa stabliność układu.")
@@ -559,6 +601,7 @@ class Window(QMainWindow):
            w.setAlignment(Qt.AlignLeft)
        self.rec_imp_amp_input.editingFinished.connect(lambda: self.update_input(self.rec_imp_amp_input, "amplitude"))
        self.rec_imp_width_input.editingFinished.connect(lambda: self.update_input(self.rec_imp_width_input, "pulse_width"))
+       self.rec_imp_width_input.editingFinished.connect(lambda: self.update_input(self.rec_imp_width_input, "pulse_width"))
        rec_imp_layout.addLayout(self._labeled_input("Amplitude [V]:", self.rec_imp_amp_input))
        rec_imp_layout.addLayout(self._labeled_input("Pulse width [s]:", self.rec_imp_width_input))
        self.rec_imp_params.setLayout(rec_imp_layout)
@@ -639,6 +682,9 @@ class Window(QMainWindow):
             error_label = QLabel(f"Error: {e}")
             error_label.setStyleSheet("color: red")
             simulation_view.addWidget(error_label)
+
+        canvas = self.create_latex_canvas(self.tf_object.get_symbolic_tf())
+        simulation_view.addWidget(canvas)
 
         self.input = self.input_function.input_plot()
         simulation_view.addWidget(self.input)
