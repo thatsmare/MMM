@@ -1,0 +1,138 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% University/School Laboratory Report
+% LaTeX Template
+% Version 4.0 (March 21, 2022)
+%
+% This template originates from:
+% https://www.LaTeXTemplates.com
+%
+% Authors:
+% Vel (vel@latextemplates.com)
+% Linux and Unix Users Group at Virginia Tech Wiki
+%
+% License:
+% CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[
+	letterpaper, % Paper size, specify a4paper (A4) or letterpaper (US letter)
+	10pt, % Default font size, specify 10pt, 11pt or 12pt
+]{CSUniSchoolLabReport}
+
+\addbibresource{sample.bib} % Bibliography file (located in the same folder as the template)
+
+%----------------------------------------------------------------------------------------
+%	REPORT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{Projekt z Metod Modelowania Matematycznego 2025 \\ Zadanie 10 \\ Działania na transmitancji układu, Charakterystyki Bodego} % Report title
+
+\author{Natalia \textsc{Sampławska 197573} \& Martyna \textsc{Penkowska 197926}} % Author name(s), add additional authors like: '\& James \textsc{Smith}'
+
+\date{\today} % Date of the report
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle % Insert the title, author and date using the information specified above
+
+\begin{center}
+	\begin{tabular}{l r}
+		Okres trwania projektu: & Semestr letni roku akademickiego 2025 \\ % Date the experiment was performed
+		Prowadzący projekt: & dr. inż \textsc{Marek Tatara} % Instructor/supervisor
+	\end{tabular}
+\end{center}
+
+% If you need to include an abstract, uncomment the lines below
+%\begin{abstract}
+%	Abstract text
+%\end{abstract}
+
+%----------------------------------------------------------------------------------------
+%	OBJECTIVE
+%----------------------------------------------------------------------------------------
+
+\section{Cel}
+
+Implementacja symulatora umożliwiającego wykreślenie charakterystyk Bodego oraz określenia stabilności na podstawie transmitancji:
+
+\begin{center}
+	\ {G(s) = } % Chemical equations entered in \ce{} commands, see the mhchem package documentation for more information
+\end{center}
+
+% If you have more than one objective, uncomment the below:
+%\begin{description}
+%	\item[First Objective] \hfill \\
+%	Objective 1 text
+%	\item[Second Objective] \hfill \\
+%	Objective 2 text
+%\end{description}
+
+%\subsection{Definitions}\label{definitions} % Labels provide a point for referencing, in this case with \ref{definitions} to refer to this subsection number
+
+%\begin{description}
+%	\item[Stoichiometry] The relationship between the relative quantities of substances taking part in a reaction or forming a compound, typically a ratio of whole integers.
+%	\item[Atomic mass] The mass of an atom of a chemical element expressed in atomic mass units. It is approximately equivalent to the number of protons and neutrons in the atom (the mass number) or to the average number allowing for the relative abundances of different isotopes. 
+%\end{description} 
+ 
+%----------------------------------------------------------------------------------------
+%	EXPERIMENTAL DATA
+%----------------------------------------------------------------------------------------
+
+\section{Zaimplementowane funkcje symulatora}
+
+\begin{tabular}{l l}
+	1. & Wybór parametrów obiektu\\ % Scientific/technical units are output using the \SI command, see the siunitx package documentation for more information on how to use this command
+	2. & Wybór sygnału wejściowego wraz z wszystkimi jego parametrami\\
+	3. & Generowanie charakterystyk Bodego\\
+	4. & Implementacja różniczkowania\\
+	5. & Obliczanie sygnału wyjściowego\\
+	6. & Przedstawienie graficzne\\
+\end{tabular}
+
+
+%----------------------------------------------------------------------------------------
+%	RESULTS AND CONCLUSIONS
+%----------------------------------------------------------------------------------------
+
+\section{Opis funkcji}
+
+The atomic weight of magnesium is concluded to be \SI{24}{\gram\per\mol}, as determined by the stoichiometry of its chemical combination with oxygen. This result is in agreement with the accepted value.
+
+\begin{figure}[H] % [H] forces the figure to be placed exactly where it appears in the text
+	\centering % Horizontally center the figure
+	\includegraphics[width=0.65\textwidth]{placeholder} % Include the figure
+	\caption{Figure caption.}
+\end{figure}
+
+%----------------------------------------------------------------------------------------
+%	DISCUSSION
+%----------------------------------------------------------------------------------------
+
+\section{Wnioski}
+
+The accepted value (periodic table) is \SI{24.3}{\gram\per\mole} \autocite{Smith:2022qr}. The percentage discrepancy between the accepted value and the result obtained here is 1.3\%. Because only a single measurement was made, it is not possible to calculate an estimated standard deviation (see \textcite{Smith:2021jd}).
+
+The most obvious source of experimental uncertainty is the limited precision of the balance. Other potential sources of experimental uncertainty are: the reaction might not be complete; if not enough time was allowed for total oxidation, less than complete oxidation of the magnesium might have, in part, reacted with nitrogen in the air (incorrect reaction); the magnesium oxide might have absorbed water from the air, and thus weigh ``too much." Because the result obtained is close to the accepted value it is possible that some of these experimental uncertainties have fortuitously cancelled one another.
+
+%----------------------------------------------------------------------------------------
+%	ANSWERS TO DEFINITIONS
+%----------------------------------------------------------------------------------------
+
+
+
+%----------------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%----------------------------------------------------------------------------------------
+
+%\printbibliography % Output the bibliography
+
+%----------------------------------------------------------------------------------------
+
+\end{document}
