@@ -107,8 +107,8 @@ class OutputCompute:
     def laplace_output(self, Linput, tf_object):
         return Linput*tf_object
     
-    # Inverse -> derivative -> plot
-    def inverse_Laplace(laplace_expr):
+     # Inverse -> derivative -> plot
+    def inverse_Laplace(self,laplace_expr):
         s, t = sp.symbols('s t')
         return sp.inverse_laplace_transform(laplace_expr, s, t)  
 
@@ -116,10 +116,11 @@ class OutputCompute:
         object_info = ObjectTransfer()
 
         laplace = self.laplace_output(self.get_input_laplace(), object_info.get_symbolic_tf())
+        laplace = laplace.subs({'A': self.amplitude, 'f': self.frequency, 'phase': self.phase, 'pulse_width': self.pulse_width})
+        
         output_in_t = self.inverse_Laplace(laplace)
         
-        output_in_t = output_in_t.subs({'A': self.amplitude, 'f': self.frequency, 'phase': self.phase, 'pulse_width': self.pulse_width})
-
+        print(output_in_t)
         return output_in_t 
 
 

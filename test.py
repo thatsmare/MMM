@@ -10,6 +10,7 @@ from matplotlib.figure import Figure
 from scipy.signal import TransferFunction
 from scipy.signal import freqs
 from scipy.signal import sawtooth
+import sympy as sp
 
 
 class ObjectTransfer:
@@ -42,7 +43,6 @@ class ObjectTransfer:
       correct_num = any(coef != 0 for coef in numerator)
       correct_den = any(coef != 0 for coef in denominator)
       return correct_num and correct_den and all_floats
-      #SPRAWDZANIE CZY TRANSMITANCJA JEST WŁAŚCIWA(?)
     
     def get_tf(self):
         if not self.correct_values():
@@ -55,15 +55,19 @@ class ObjectTransfer:
       tf = self.get_tf()
       return list(tf.zeros), list(tf.poles)
     
+    def get_symbolic_tf(self):
+        s = sp.Symbol('s')
+        symbolic_tf = (self.a0 + self.a1*s + self.a2*s**2 + self.a3 * s**3)/(self.b0 + self.b1*s + self.b2*s**2 + self.b3*s**3 + self.b4*s**4)
+        return symbolic_tf
+    
 
 class OutputCompute:
-    def __init__(self, signal_type, tf_object, input):
-        self.input = input
-        self.tf_object = tf_object
-
-    #input in time domain
-    def input_u_t(self):
-        self.u, self.t = input.input_generate()
+    def __init__(self, signal_type, frequency, amplitude, phase, pulse_width):
+        self.signal_type = signal_type
+        self.frequency = frequency
+        self.amplitude = amplitude
+        self.phase = phase
+        self.pulse_width = pulse_width
     
     def differentation_rk4(self):
         return self.y
@@ -72,18 +76,56 @@ class OutputCompute:
         self.figure = Figure(figsize=(6, 4))
         self.canvas = FigureCanvas(self.figure)
         ax = self.figure.add_subplot(111)  
-
         ax.plot(self.t, self.y)
         ax.set_title("Output signal")
         ax.set_xlabel("Time [s]")
         ax.set_ylabel("Amplitude")
         ax.grid(True)
         self.canvas.draw()
-        return self.canvas      
+        return self.canvas   
+    
+    # Laplace of functions (for Y(s) = G(s)*U(s))
+    def get_input_laplace(self):
+        s, A, f, phase, pulse_width = sp.symbols('s A f phase pulse_width')
+        T = 1/f
+
+        match self.signal_type:
+            case "sine":
+                input_laplace = (A*(s*sp.sin(phase) + 2*np.pi*f*sp.cos(phase))/(s**2 + (2*np.pi*f)**2)) #sp for symbolic
+            case "square":
+                input_laplace = (A/s)*((1-sp.exp(-s*0.5*T))/(1 - sp.exp(-s*T)))
+            case "sawtooth":
+                input_laplace = (1/(1-sp.exp(-s*T))) * (A/T)* ((1-sp.exp(-s*T))*(1 + s*T)/s**2)
+            case "rectangle impulse":
+                input_laplace =  A/s * (1 - sp.exp(-s*pulse_width))
+            case "triangle":
+                input_laplace = A/s**2 * (1 - sp.exp(-s*T) * (s*T + 1) + sp.exp(-2*s*T) * (s*T - 1))
+            case _:
+                print("Error, could not get Laplace of input signal")
+        return input_laplace
+    
+    def laplace_output(self, Linput, tf_object):
+        return Linput*tf_object
+    
+    # Inverse -> derivative -> plot
+    def inverse_Laplace(self,laplace_expr):
+        s, t = sp.symbols('s t')
+        return sp.inverse_laplace_transform(laplace_expr, s, t)  
+
+    def get_output_in_t(self):
+        object_info = ObjectTransfer()
+
+        laplace = self.laplace_output(self.get_input_laplace(), object_info.get_symbolic_tf())
+        laplace = laplace.subs({'A': self.amplitude, 'f': self.frequency, 'phase': self.phase, 'pulse_width': self.pulse_width})
+        
+        output_in_t = self.inverse_Laplace(laplace)
+        
+        print(output_in_t)
+        return output_in_t 
 
 
 class InputFunction:
-    def __init__(self, signal_type, amplitude=1.0, frequency=1.0, phase=0.0, duration=2.0, sample_rate=1000, pulse_width=1.0):
+    def __init__(self, signal_type, amplitude=1.0, frequency=1.0, phase=0.0, duration=10.0, sample_rate=1000, pulse_width=1.0):
         self.signal_type = signal_type
         self.amplitude = amplitude
         self.frequency = frequency
@@ -136,12 +178,13 @@ class InputFunction:
         self.figure = Figure(figsize=(6, 4))
         self.canvas = FigureCanvas(self.figure)
         ax = self.figure.add_subplot(111)  
-
         ax.plot(t, y)
         ax.set_title(f"Input {self.signal_type} signal")
         ax.set_xlabel("Time [s]")
         ax.set_ylabel("Amplitude")
         ax.grid(True)
+        if self.signal_type == "rectangle impulse":
+            ax.set_xlim(0, self.pulse_width + 1)
         self.canvas.draw()
         return self.canvas        
         
@@ -219,6 +262,21 @@ class BodePlot:
         self.phase_margin = phase_margin
         self.stable = (gain_margin is not None and gain_margin > 0 and phase_margin is not None and phase_margin > 0)
 
+        """#STABILITY
+        to_zero = np.abs(phase + 180) #we're looking for phase at -180 so minimazing it to 0
+        phase_180_idx = np.argmin(to_zero)
+        magnitude_180 = magnitude[phase_180_idx]
+        gain_margin = -magnitude_180 #zapas wzmocnienia
+
+        gain_0_idx = np.argmin(np.abs(magnitude))
+        phase_0 = phase[gain_0_idx]
+        phase_margin = 180 + phase_0   
+
+        if gain_margin and phase_margin > 0:
+            self.stable = True
+        else:
+            self.stable = False"""
+
         #Plotting magnitude
         ax_mag.set_title("Magnitude Bode Plot")
         ax_mag.set_xlabel("Frequency [rad/s]")
@@ -244,7 +302,7 @@ class BodePlot:
             ax_ph.legend()
          
         self.canvas.draw()
-      
+
 
 class Window(QMainWindow):
     def __init__(self):
@@ -252,6 +310,7 @@ class Window(QMainWindow):
         self.tf_object = ObjectTransfer()
         self.selected_signal = "sine"
         self.input_function = InputFunction(self.selected_signal)
+        self.output = OutputCompute(self.selected_signal, self.input_function.frequency, self.input_function.amplitude, self.input_function.phase, self.input_function.pulse_width)
         self.setWindowTitle("Transfer Function I/O Illustration")
         self.setGeometry(100, 100, 800, 800)
         self.transfer_valid = True
@@ -339,7 +398,7 @@ class Window(QMainWindow):
         title.setAlignment(Qt.AlignCenter)
 
         description = QLabel("Symulator umożliwia uzyskanie odpowiedzi czasowych układu na pobudzenie sygnałem" \
-        " prostokątnym o skończonym czasie trwania, piłokształtnym i sinusoidalnym o zadanych parametrach. Możliwa jest zmiana wszystkich" \
+        " prostokątnym o nieskończonym czasie trwania, impulsem, sygnałem piłokształtnym, trójkątnym i sinusoidalnym o zadanych parametrach. Możliwa jest zmiana wszystkich" \
         " współczynników licznika i mianownika transmitancji. Program wykreśla charakterystyki częstotliwościowe Bodego oraz sygnał wejściowy" \
         " i wyjściowy, na podstawie czego określa stabliność układu.")
         description.setWordWrap(True)
@@ -499,7 +558,7 @@ class Window(QMainWindow):
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
        self.rec_imp_amp_input.editingFinished.connect(lambda: self.update_input(self.rec_imp_amp_input, "amplitude"))
-       self.rec_imp_width_input.editingFinished.connect(lambda: self.update_input(self.rec_imp_width_input, "pulse width"))
+       self.rec_imp_width_input.editingFinished.connect(lambda: self.update_input(self.rec_imp_width_input, "pulse_width"))
        rec_imp_layout.addLayout(self._labeled_input("Amplitude [V]:", self.rec_imp_amp_input))
        rec_imp_layout.addLayout(self._labeled_input("Pulse width [s]:", self.rec_imp_width_input))
        self.rec_imp_params.setLayout(rec_imp_layout)
@@ -587,9 +646,6 @@ class Window(QMainWindow):
           
 #run
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    windowapp = Window()
-    windowapp.show()
-    sys.exit(app.exec_())
-
+    output = OutputCompute("sine", 10, 1, 0,0)
+    laplace = output.get_output_in_t()
      
