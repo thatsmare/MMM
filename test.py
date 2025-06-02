@@ -15,11 +15,11 @@ import sympy as sp
 
 class ObjectTransfer:
     def __init__(self):
-      self.b4 = 0.0
-      self.b3 = 0.0
-      self.b2 = 1.0
-      self.b1 = 1.0
-      self.b0 = 1.0
+      self.b4 = 4.0
+      self.b3 = 3.0
+      self.b2 = 2.0
+      self.b1 = 0.0
+      self.b0 = 0.0
       self.a3 = 0.0
       self.a2 = 0.0
       self.a1 = 1.0
@@ -27,7 +27,7 @@ class ObjectTransfer:
 
     def get_tf_coefficients(self):
       numerator = [self.a3, self.a2, self.a1, self.a0]
-      denominator = [self.b3, self.b2, self.b1, self.b0]
+      denominator = [self.b4, self.b3, self.b2, self.b1, self.b0]
       return numerator, denominator
     
     def update_coefficients(self, attr_name, value):
@@ -113,30 +113,35 @@ class OutputCompute:
         return sp.inverse_laplace_transform(laplace_expr, s, t) """ 
 
     def get_differential_equation(self):
-        # symbols needed
-        t, s = sp.symbols('t s')
-        y = sp.Function('y')
-        u = sp.Function('u')
+        # symbols needed, y,y1,.../u,u1,... next derivatives(pochodne)
+        y_diff = [
+           sp.Symbol('y'),
+           sp.Symbol('y1'),
+           sp.Symbol('y2'),
+           sp.Symbol('y3'),
+           sp.Symbol('y4'),
+            ]
+        u_diff = [
+            sp.Symbol('u'),
+            sp.Symbol('u1'),
+            sp.Symbol('u2'),
+            sp.Symbol('u3'),
+            ]
         
         object_info = ObjectTransfer() # for tf
         #input_info = InputFunction()    # for u(t)
         
-        tf = object_info.get_symbolic_tf()
+        numerator, denominator = object_info.get_tf_coefficients()
         
-        num, den = sp.fraction(tf)  #licznik i mianownik
-        num_poly = sp.Poly(num, s)  #poly=wielomian
-        den_poly = sp.Poly(den, s)
-
         # left side of the equation - all y(t)
-        y_side = sum(coef * sp.diff(y(t), t, i) for i, coef in enumerate(reversed(den_poly.all_coeffs())))
-
+        y_side = sum(coefficient *y_diff[i]  for i, coefficient in enumerate(reversed(denominator)))
+        
         #Right side of the equation - all u(t)
-        u_side = sum(coef * sp.diff(u(t), t, i) for i, coef in enumerate(reversed(num_poly.all_coeffs())))
-
+        u_side = sum(coefficient *u_diff[i]  for i, coefficient in enumerate(reversed(numerator)))        
+        
         differentail_equation = sp.Eq(y_side, u_side)
         
         return differentail_equation
-
 
 class InputFunction:
     def __init__(self, signal_type, amplitude=1.0, frequency=1.0, phase=0.0, duration=10.0, sample_rate=1000, pulse_width=1.0):
