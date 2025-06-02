@@ -84,8 +84,8 @@ class OutputCompute:
         self.canvas.draw()
         return self.canvas   
     
-    # Laplace of functions (for Y(s) = G(s)*U(s))
-    def get_input_laplace(self):
+    
+    """def get_input_in_t(self):
         s, A, f, phase, pulse_width = sp.symbols('s A f phase pulse_width')
         T = 1/f
 
@@ -110,18 +110,32 @@ class OutputCompute:
      # Inverse -> derivative -> plot
     def inverse_Laplace(self,laplace_expr):
         s, t = sp.symbols('s t')
-        return sp.inverse_laplace_transform(laplace_expr, s, t)  
+        return sp.inverse_laplace_transform(laplace_expr, s, t) """ 
 
-    def get_output_in_t(self):
-        object_info = ObjectTransfer()
+    def get_differential_equation(self):
+        # symbols needed
+        t, s = sp.symbols('t s')
+        y = sp.Function('y')
+        u = sp.Function('u')
+        
+        object_info = ObjectTransfer() # for tf
+        #input_info = InputFunction()    # for u(t)
+        
+        tf = object_info.get_symbolic_tf()
+        
+        num, den = sp.fraction(tf)  #licznik i mianownik
+        num_poly = sp.Poly(num, s)  #poly=wielomian
+        den_poly = sp.Poly(den, s)
 
-        laplace = self.laplace_output(self.get_input_laplace(), object_info.get_symbolic_tf())
-        laplace = laplace.subs({'A': self.amplitude, 'f': self.frequency, 'phase': self.phase, 'pulse_width': self.pulse_width})
+        # left side of the equation - all y(t)
+        y_side = sum(coef * sp.diff(y(t), t, i) for i, coef in enumerate(reversed(den_poly.all_coeffs())))
+
+        #Right side of the equation - all u(t)
+        u_side = sum(coef * sp.diff(u(t), t, i) for i, coef in enumerate(reversed(num_poly.all_coeffs())))
+
+        differentail_equation = sp.Eq(y_side, u_side)
         
-        output_in_t = self.inverse_Laplace(laplace)
-        
-        print(output_in_t)
-        return output_in_t 
+        return differentail_equation
 
 
 class InputFunction:
@@ -172,6 +186,25 @@ class InputFunction:
             t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
             y = self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase, width=0.5 )
             return t, y
+        
+    def input_symbolic(self):
+        t = sp.Symbol('t')
+        T = 1/self.frequency
+
+        match self.signal_type:
+            case "sine":
+                input_symbolic = self.amplitude * sp.sin(2 * sp.pi * self.frequency * t + self.phase)
+            case "square":
+                input_symbolic = self.amplitude * (sp.Heaviside(t % T) - sp.Heaviside((t % T) - T/2))
+            case "sawtooth":
+                input_symbolic = self.amplitude * ((t % T) / T - 0.5) * 2
+            case "rectangle impulse":
+                input_symbolic =  self.amplitude * (sp.Heaviside(t) - sp.Heaviside(t - self.pulse_width))
+            case "triangle":
+                input_symbolic = sp.Piecewise((4 * self.amplitude / T * (sp.Mod(t,T)) - self.amplitude, (sp.Mod(t,T)) < T / 2),(-4 * self.amplitude / T * (sp.Mod(t,T)) + 3 * self.amplitude, (sp.Mod(t,T)) >= T / 2))
+            case _:
+                print("Error")
+        return input_symbolic
 
     def input_plot(self):
         t, y = self.input_generate()
@@ -626,6 +659,8 @@ class Window(QMainWindow):
         simulation_widget = QWidget()
         simulation_widget.setLayout(simulation_view)
         self.setCentralWidget(simulation_widget)
+        
+        print(self.output.get_output_in_t())
 
         try:
             self.bode = BodePlot(self.tf_object)
