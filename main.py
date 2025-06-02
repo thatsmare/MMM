@@ -1,368 +1,26 @@
 import sys
 import numpy as np
+import sympy as sp
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit,
     QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QRadioButton, QGroupBox
 )
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-from scipy.signal import TransferFunction
-from scipy.signal import freqs
-from scipy.signal import sawtooth
-import sympy as sp
-
-
-class ObjectTransfer:
-    def __init__(self):
-      self.b4 = 0.0
-      self.b3 = 0.0
-      self.b2 = 1.0
-      self.b1 = 1.0
-      self.b0 = 1.0
-      self.a3 = 0.0
-      self.a2 = 0.0
-      self.a1 = 1.0
-      self.a0 = 1.0
-
-    def get_tf_coefficients(self):
-      numerator = [self.a3, self.a2, self.a1, self.a0]
-      denominator = [self.b4, self.b3, self.b2, self.b1, self.b0]
-      return numerator, denominator
-    
-    def update_coefficients(self, attr_name, value):
-       try:
-            value = float(value)
-       except ValueError:
-            raise ValueError(f"{attr_name.capitalize()} was not a number.")
-       setattr(self, attr_name, value)
+import matplotlib.pyplot as plt
+from object_transfer import ObjectTransfer
+from output_compute import OutputCompute
+from input_function import InputFunction
+from bode_plot import BodePlot
+from display_functions import DisplayFunctions
         
-    def correct_values(self):
-      numerator, denominator = self.get_tf_coefficients()
-      all_floats = all(isinstance(c, float) for c in numerator + denominator)
-      correct_num = any(coef != 0 for coef in numerator)
-      correct_den = any(coef != 0 for coef in denominator)
-      return correct_num and correct_den and all_floats
-    
-    def get_tf(self):
-        if not self.correct_values():
-            raise ValueError("Incorrect transfer function")
-        num, den = self.get_tf_coefficients()
-        return TransferFunction(num, den)
-    
-    def zeros_and_poles(self):
-      #get the poles and zeros 
-      tf = self.get_tf()
-      return list(tf.zeros), list(tf.poles)
-    
-    def get_symbolic_tf(self):
-        s = sp.Symbol('s')
-        symbolic_tf = (self.a0 + self.a1*s + self.a2*s**2 + self.a3 * s**3)/(self.b0 + self.b1*s + self.b2*s**2 + self.b3*s**3 + self.b4*s**4)
-        return symbolic_tf
-    
-
-class OutputCompute:
-    def __init__(self, signal_type, frequency, amplitude, phase, pulse_width):
-        self.signal_type = signal_type
-        self.frequency = frequency
-        self.amplitude = amplitude
-        self.phase = phase
-        self.pulse_width = pulse_width
-    
-    def differentation_rk4(self):
-        return self.y
-        
-    def output_plot(self):
-        self.figure = Figure(figsize=(6, 4))
-        self.canvas = FigureCanvas(self.figure)
-        ax = self.figure.add_subplot(111)  
-        ax.plot(self.t, self.y)
-        ax.set_title("Output signal")
-        ax.set_xlabel("Time [s]")
-        ax.set_ylabel("Amplitude")
-        ax.grid(True)
-        self.canvas.draw()
-        return self.canvas   
-    
-    
-    """def get_input_in_t(self):
-        s, A, f, phase, pulse_width = sp.symbols('s A f phase pulse_width')
-        T = 1/f
-
-        match self.signal_type:
-            case "sine":
-                input_laplace = (A*(s*sp.sin(phase) + 2*np.pi*f*sp.cos(phase))/(s**2 + (2*np.pi*f)**2)) #sp for symbolic
-            case "square":
-                input_laplace = (A/s)*((1-sp.exp(-s*0.5*T))/(1 - sp.exp(-s*T)))
-            case "sawtooth":
-                input_laplace = (1/(1-sp.exp(-s*T))) * (A/T)* ((1-sp.exp(-s*T))*(1 + s*T)/s**2)
-            case "rectangle impulse":
-                input_laplace =  A/s * (1 - sp.exp(-s*pulse_width))
-            case "triangle":
-                input_laplace = A/s**2 * (1 - sp.exp(-s*T) * (s*T + 1) + sp.exp(-2*s*T) * (s*T - 1))
-            case _:
-                print("Error, could not get Laplace of input signal")
-        return input_laplace
-    
-    def laplace_output(self, Linput, tf_object):
-        return Linput*tf_object
-    
-     # Inverse -> derivative -> plot
-    def inverse_Laplace(self,laplace_expr):
-        s, t = sp.symbols('s t')
-        return sp.inverse_laplace_transform(laplace_expr, s, t) """ 
-
-    def get_differential_equation(self):
-        # symbols needed, y,y1,.../u,u1,... next derivatives(pochodne)
-        self.y_diff = [
-            sp.Symbol('y'),
-            sp.Symbol('y1'),
-            sp.Symbol('y2'),
-            sp.Symbol('y3'),
-            sp.Symbol('y4'),
-            ]
-        self.u_diff = [
-            sp.Symbol('u'),
-            sp.Symbol('u1'),
-            sp.Symbol('u2'),
-            sp.Symbol('u3'),
-            ]
-        
-        object_info = ObjectTransfer() # for tf
-                
-        numerator, denominator = object_info.get_tf_coefficients()
-        
-        # left side of the equation - all y(t)
-        y_side = sum(coefficient *self.y_diff[i]  for i, coefficient in enumerate(reversed(denominator)))
-        
-        #Right side of the equation - all u(t)
-        u_side = sum(coefficient *self.u_diff[i]  for i, coefficient in enumerate(reversed(numerator)))        
-        
-        differential_equation = sp.Eq(y_side, u_side)
-        
-        return differential_equation 
-    
-    def get_output(self, diff_equation):
-        #self.y_diff, self_u_diff #symbols
-        input_info = InputFunction()    # for u(t)
-        
-        u = input_info.input_symbolic #SYMBOLIC t
-        u1 = 1   #diff_function(u,t)
-        u2 = 2   #diff_function(u1,t)
-        u3 = 3   #diff_function(u2,t)
-        u_symbolic = [u, u1, u2, u3]
-        
-        diff_equation = diff_equation.subs(self.u_diff, u_symbolic)
-              
-    
-
-
-class InputFunction:
-    def __init__(self, signal_type, amplitude=1.0, frequency=1.0, phase=0.0, duration=10.0, sample_rate=1000, pulse_width=1.0):
-        self.signal_type = signal_type
-        self.amplitude = amplitude
-        self.frequency = frequency
-        self.phase = phase
-        self.duration = duration
-        self.sample_rate = sample_rate
-        self.pulse_width = pulse_width
-
-    def update_input_function(self, attr_name, value):
-        try:
-            value = float(value)
-        except ValueError:
-            raise ValueError(f"{attr_name.capitalize()} must be a number.")
- 
-        if attr_name == "frequency" and value <= 0:
-            raise ValueError("Wrong frequency.")
-        if attr_name == "amplitude" and value <= 0:
-            raise ValueError("Wrong amplitude.")
-        if attr_name == "phase" and not (-np.pi <= value <= np.pi):
-            raise ValueError("Wrong phase [-pi,pi].")
-        if attr_name == "pulse width" and value <= 0:
-            raise ValueError("Wrong pulse width.")
-        setattr(self, attr_name, value)
-
-    def input_generate(self):
-        if self.signal_type == "sawtooth":
-            t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
-            y = self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase)
-            return t,y
-        elif self.signal_type == "sine":
-            t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
-            y = self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
-            return t, y
-        elif self.signal_type == "square":
-            t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
-            temp = self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
-            y = self.amplitude * np.where(temp>=0, 1, -1)
-            return t, y
-        elif self.signal_type == "rectangle impulse":
-            t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
-            y = self.amplitude * np.where((t>0) & (t<self.pulse_width), 1, 0)
-            return t, y
-        elif self.signal_type == "triangle":
-            t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
-            y = self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase, width=0.5 )
-            return t, y
-        
-    def input_symbolic(self):
-        t = sp.Symbol('t')
-        T = 1/self.frequency
-
-        match self.signal_type:
-            case "sine":
-                input_symbolic = self.amplitude * sp.sin(2 * sp.pi * self.frequency * t + self.phase)
-            case "square":
-                input_symbolic = self.amplitude * (sp.Heaviside(t % T) - sp.Heaviside((t % T) - T/2))
-            case "sawtooth":
-                input_symbolic = self.amplitude * ((t % T) / T - 0.5) * 2
-            case "rectangle impulse":
-                input_symbolic =  self.amplitude * (sp.Heaviside(t) - sp.Heaviside(t - self.pulse_width))
-            case "triangle":
-                input_symbolic = sp.Piecewise((4 * self.amplitude / T * (sp.Mod(t,T)) - self.amplitude, (sp.Mod(t,T)) < T / 2),(-4 * self.amplitude / T * (sp.Mod(t,T)) + 3 * self.amplitude, (sp.Mod(t,T)) >= T / 2))
-            case _:
-                print("Error")
-        return input_symbolic
-
-    def input_plot(self):
-        t, y = self.input_generate()
-        self.figure = Figure(figsize=(6, 4))
-        self.canvas = FigureCanvas(self.figure)
-        ax = self.figure.add_subplot(111)  
-        ax.plot(t, y)
-        ax.set_title(f"Input {self.signal_type} signal")
-        ax.set_xlabel("Time [s]")
-        ax.set_ylabel("Amplitude")
-        ax.grid(True)
-        if self.signal_type == "rectangle impulse":
-            ax.set_xlim(0, self.pulse_width + 1)
-        self.canvas.draw()
-        return self.canvas        
-        
-# Plotting the Bode
-#FREQS UZNAJE UKŁAD ZA STABILNY, DLA TYCH Z DODATNIMI ZERAMI I BIEGUNAMI NIE DZIAŁA
-class BodePlot:
-    def __init__(self, tf_object):
-      self.tf_object = tf_object
-      self.numerator, self.denominator = self.tf_object.get_tf_coefficients()
-      zeros, poles = self.tf_object.zeros_and_poles()
-
-      #Zero is bad at log scale
-      zeros_and_poles = [abs(f) for f in zeros + poles if abs(f) > 1e-6]
-
-     # preparing range of the plot
-      if zeros_and_poles:
-        min_value = 0.1 * min(zeros_and_poles)
-        max_value = 10 * max(zeros_and_poles)
-      else:
-        min_value = 0.1
-        max_value = 100
-      
-      #the necessary range of the plot
-      self.range = [min_value, max_value]
-      self.figure = Figure(figsize=(6, 4))
-      self.canvas = FigureCanvas(self.figure)
-      self.plotting_bode()
-    
-    def plotting_bode(self):
-        ax_mag = self.figure.add_subplot(211)
-        ax_ph = self.figure.add_subplot(212, sharex=ax_mag) #rows,col,index
-        
-        # w to put in tf
-        w = np.logspace(np.log10(self.range[0]), np.log10(self.range[1]), 1000) # 1000 points to count
-        
-        # counts tf(j*w)
-        w, plot_line = freqs(self.numerator, self.denominator,w)
-
-        #change to dB and angle respectively
-        magnitude = 20 * np.log10(abs(plot_line))
-        phase = np.angle(plot_line, deg=True)
-        
-        # --- Zapas wzmocnienia (gain margin) ---
-        gain_margin = None
-        gain_margin_freq = None
-        for i in range(len(phase) - 1):
-            if (phase[i] + 180) * (phase[i + 1] + 180) < 0:
-                # Interpolacja liniowa częstotliwości
-                w1, w2 = w[i], w[i + 1]
-                p1, p2 = phase[i], phase[i + 1]
-                m1, m2 = magnitude[i], magnitude[i + 1]
-                w_cross = w1 + (w2 - w1) * (-180 - p1) / (p2 - p1)
-                mag_cross = m1 + (m2 - m1) * (w_cross - w1) / (w2 - w1)
-                if mag_cross < 0:
-                    gain_margin = -mag_cross
-                    gain_margin_freq = w_cross
-                break  # bierzemy pierwsze przecięcie
-
-        # --- Zapas fazy (phase margin) ---
-        phase_margin = None
-        phase_margin_freq = None
-        for i in range(len(magnitude) - 1):
-            if magnitude[i] * magnitude[i + 1] < 0:
-                w1, w2 = w[i], w[i + 1]
-                m1, m2 = magnitude[i], magnitude[i + 1]
-                p1, p2 = phase[i], phase[i + 1]
-                w_cross = w1 + (w2 - w1) * (0 - m1) / (m2 - m1)
-                phase_cross = p1 + (p2 - p1) * (w_cross - w1) / (w2 - w1)
-                phase_margin = 180 + phase_cross
-                phase_margin_freq = w_cross
-                break
-
-        # --- Ocena stabilności ---
-        self.gain_margin = gain_margin
-        self.phase_margin = phase_margin
-        self.stable = (gain_margin is not None and gain_margin > 0 and phase_margin is not None and phase_margin > 0)
-
-        """#STABILITY
-        to_zero = np.abs(phase + 180) #we're looking for phase at -180 so minimazing it to 0
-        phase_180_idx = np.argmin(to_zero)
-        magnitude_180 = magnitude[phase_180_idx]
-        gain_margin = -magnitude_180 #zapas wzmocnienia
-
-        gain_0_idx = np.argmin(np.abs(magnitude))
-        phase_0 = phase[gain_0_idx]
-        phase_margin = 180 + phase_0   
-
-        if gain_margin and phase_margin > 0:
-            self.stable = True
-        else:
-            self.stable = False"""
-
-        #Plotting magnitude
-        ax_mag.set_title("Magnitude Bode Plot")
-        ax_mag.set_xlabel("Frequency [rad/s]")
-        ax_mag.set_ylabel("Magnitude [dB]")
-        ax_mag.set_xscale("log") # log on x axis
-        ax_mag.plot(w, magnitude)
-
-        #PLotting phase
-        ax_ph.set_title("Phase Bode Plot")
-        ax_ph.set_xlabel("Frequency [rad/s]")
-        ax_ph.set_ylabel("Phase [°]")
-        ax_ph.set_xscale("log") # log on x axis
-        ax_ph.plot(w, phase)
-
-        # Linie pomocnicze na wykresie amplitudy i fazy
-        ax_mag.axhline(0, color='grey', linestyle='--')
-        ax_ph.axhline(-180, color='grey', linestyle='--')
-        if gain_margin_freq:
-            ax_mag.axvline(gain_margin_freq, color='red', linestyle='--', label="Gain Margin")
-            ax_mag.legend()
-        if phase_margin_freq:
-            ax_ph.axvline(phase_margin_freq, color='red', linestyle='--', label="Phase Margin")
-            ax_ph.legend()
-         
-        self.canvas.draw()
-
-
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
         self.tf_object = ObjectTransfer()
         self.selected_signal = "sine"
         self.input_function = InputFunction(self.selected_signal)
-        self.output = OutputCompute(self.selected_signal, self.input_function.frequency, self.input_function.amplitude, self.input_function.phase, self.input_function.pulse_width)
+        self.output = OutputCompute(self.selected_signal, self.tf_object, self.input_function)
         self.setWindowTitle("Transfer Function I/O Illustration")
         self.setGeometry(100, 100, 800, 800)
         self.transfer_valid = True
@@ -443,6 +101,14 @@ class Window(QMainWindow):
         self.sawtooth_params.setVisible(self.sawtooth_button.isChecked())
         self.rec_imp_params.setVisible(self.rec_imp_button.isChecked())
         self.triangle_params.setVisible(self.triangle_button.isChecked())
+
+    def create_latex_canvas(self, expr):
+        fig, ax = plt.subplots(figsize=(6, 2), dpi=100)
+        ax.axis("off")
+        latex_str = r"$G(s) = " + sp.latex(expr) + r"$"
+        ax.text(0.5, 0.5, latex_str, fontsize=18, ha='center', va='center')
+        canvas = FigureCanvas(fig)
+        return canvas
 
     def start_menu(self):
         layout = QVBoxLayout()
@@ -678,8 +344,6 @@ class Window(QMainWindow):
         simulation_widget = QWidget()
         simulation_widget.setLayout(simulation_view)
         self.setCentralWidget(simulation_widget)
-        
-        print(self.output.get_output_in_t())
 
         try:
             self.bode = BodePlot(self.tf_object)
@@ -694,6 +358,10 @@ class Window(QMainWindow):
             error_label.setStyleSheet("color: red")
             simulation_view.addWidget(error_label)
 
+        canvas = self.create_latex_canvas(self.tf_object.get_symbolic_tf())
+        simulation_view.addWidget(canvas)
+
+        self.output.get_differential_equation()
         self.input = self.input_function.input_plot()
         simulation_view.addWidget(self.input)
         simulation_view.addWidget(back_b)
@@ -705,4 +373,3 @@ if __name__ == "__main__":
     windowapp.show()
     sys.exit(app.exec_())
 
-     
