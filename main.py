@@ -361,9 +361,8 @@ class Window(QMainWindow):
         canvas = self.create_latex_canvas(self.tf_object.get_symbolic_tf())
         simulation_view.addWidget(canvas)
 
-        self.output.get_differential_equation()
-        self.input = self.input_function.input_plot()
-        simulation_view.addWidget(self.input)
+        simulation_view.addWidget(self.input_function.input_plot())
+        simulation_view.addWidget(self.output.output_plot())
         simulation_view.addWidget(back_b)
           
 #run
