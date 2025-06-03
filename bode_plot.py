@@ -38,9 +38,9 @@ class BodePlot:
 
         #change to dB and angle respectively
         magnitude = 20 * np.log10(abs(plot_line))
-        phase = np.angle(plot_line, deg=True)
+        phase = np.unwrap(np.angle(plot_line, deg=True))
         
-        # --- Zapas wzmocnienia (gain margin) ---
+        """# --- Zapas wzmocnienia (gain margin) ---
         gain_margin = None
         gain_margin_freq = None
         for i in range(len(phase) - 1):
@@ -74,21 +74,30 @@ class BodePlot:
         self.gain_margin = gain_margin
         self.phase_margin = phase_margin
         self.stable = (gain_margin is not None and gain_margin > 0 and phase_margin is not None and phase_margin > 0)
-
-        """#STABILITY
-        to_zero = np.abs(phase + 180) #we're looking for phase at -180 so minimazing it to 0
-        phase_180_idx = np.argmin(to_zero)
-        magnitude_180 = magnitude[phase_180_idx]
-        gain_margin = -magnitude_180 #zapas wzmocnienia
-
-        gain_0_idx = np.argmin(np.abs(magnitude))
-        phase_0 = phase[gain_0_idx]
-        phase_margin = 180 + phase_0   
-
-        if gain_margin and phase_margin > 0:
-            self.stable = True
+"""   
+        
+        #STABILITY
+        zeros, poles = self.tf_object.zeros_and_poles()
+        
+        
+        stable_poles = all(np.real(p) <= 0 for p in poles)
+        
+        if not stable_poles:
+            self.stable = False
         else:
-            self.stable = False"""
+            to_zero = np.abs(phase + 180) #we're looking for phase at -180 so minimazing it to 0
+            gain_margin_freq = np.argmin(to_zero)
+            magnitude_180 = magnitude[gain_margin_freq]
+            gain_margin = -magnitude_180 #zapas wzmocnienia
+
+            phase_margin_freq  = np.argmin(np.abs(magnitude))
+            phase_0 = phase[phase_margin_freq]
+            phase_margin = 180 + phase_0 
+                        
+            if gain_margin > 0 and phase_margin > 0:
+                self.stable = True
+            else:
+                self.stable = False           
 
         #Plotting magnitude
         ax_mag.set_title("Magnitude Bode Plot")
@@ -104,14 +113,21 @@ class BodePlot:
         ax_ph.set_xscale("log") # log on x axis
         ax_ph.plot(w, phase)
 
-        # Linie pomocnicze na wykresie amplitudy i fazy
-        ax_mag.axhline(0, color='grey', linestyle='--')
-        ax_ph.axhline(-180, color='grey', linestyle='--')
-        if gain_margin_freq:
-            ax_mag.axvline(gain_margin_freq, color='red', linestyle='--', label="Gain Margin")
+        """# Linie pomocnicze na wykresie amplitudy i fazy
+        if gain_margin_freq is not None:
+            ax_mag.axvline(gain_margin_freq, color='red', linestyle='--', label=f"Gain Margin: {gain_margin:.2f} dB")
             ax_mag.legend()
-        if phase_margin_freq:
-            ax_ph.axvline(phase_margin_freq, color='red', linestyle='--', label="Phase Margin")
+
+        if phase_margin_freq is not None:
+            ax_ph.axvline(phase_margin_freq, color='red', linestyle='--', label=f"Phase Margin: {phase_margin:.2f}°")
             ax_ph.legend()
-         
+         """
+        if stable_poles:
+            ax_mag.axvline(w[gain_margin_freq], color='red', linestyle='--', 
+                        label=f"Gain Margin: {gain_margin:.1f} dB")
+            ax_ph.axvline(w[phase_margin_freq], color='blue', linestyle='--', 
+                        label=f"Phase Margin: {phase_margin:.1f}°")
+            ax_mag.legend()
+            ax_ph.legend()
+            
         self.canvas.draw()

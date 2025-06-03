@@ -41,7 +41,7 @@ class OutputCompute:
 
         derivatives = list(x[1:n+1])
         derivatives.append(highest_derivative)  
-        print(derivatives)
+        #print(derivatives)
         return derivatives
     
     def simulate_system(self, t_start, t_end, dt):
