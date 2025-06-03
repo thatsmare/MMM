@@ -39,43 +39,7 @@ class BodePlot:
         #change to dB and angle respectively
         magnitude = 20 * np.log10(abs(plot_line))
         phase = np.unwrap(np.angle(plot_line, deg=True))
-        
-        """# --- Zapas wzmocnienia (gain margin) ---
-        gain_margin = None
-        gain_margin_freq = None
-        for i in range(len(phase) - 1):
-            if (phase[i] + 180) * (phase[i + 1] + 180) < 0:
-                # Interpolacja liniowa częstotliwości
-                w1, w2 = w[i], w[i + 1]
-                p1, p2 = phase[i], phase[i + 1]
-                m1, m2 = magnitude[i], magnitude[i + 1]
-                w_cross = w1 + (w2 - w1) * (-180 - p1) / (p2 - p1)
-                mag_cross = m1 + (m2 - m1) * (w_cross - w1) / (w2 - w1)
-                if mag_cross < 0:
-                    gain_margin = -mag_cross
-                    gain_margin_freq = w_cross
-                break  # bierzemy pierwsze przecięcie
-
-        # --- Zapas fazy (phase margin) ---
-        phase_margin = None
-        phase_margin_freq = None
-        for i in range(len(magnitude) - 1):
-            if magnitude[i] * magnitude[i + 1] < 0:
-                w1, w2 = w[i], w[i + 1]
-                m1, m2 = magnitude[i], magnitude[i + 1]
-                p1, p2 = phase[i], phase[i + 1]
-                w_cross = w1 + (w2 - w1) * (0 - m1) / (m2 - m1)
-                phase_cross = p1 + (p2 - p1) * (w_cross - w1) / (w2 - w1)
-                phase_margin = 180 + phase_cross
-                phase_margin_freq = w_cross
-                break
-
-        # --- Ocena stabilności ---
-        self.gain_margin = gain_margin
-        self.phase_margin = phase_margin
-        self.stable = (gain_margin is not None and gain_margin > 0 and phase_margin is not None and phase_margin > 0)
-"""   
-        
+                
         #STABILITY
         zeros, poles = self.tf_object.zeros_and_poles()
         
@@ -113,15 +77,6 @@ class BodePlot:
         ax_ph.set_xscale("log") # log on x axis
         ax_ph.plot(w, phase)
 
-        """# Linie pomocnicze na wykresie amplitudy i fazy
-        if gain_margin_freq is not None:
-            ax_mag.axvline(gain_margin_freq, color='red', linestyle='--', label=f"Gain Margin: {gain_margin:.2f} dB")
-            ax_mag.legend()
-
-        if phase_margin_freq is not None:
-            ax_ph.axvline(phase_margin_freq, color='red', linestyle='--', label=f"Phase Margin: {phase_margin:.2f}°")
-            ax_ph.legend()
-         """
         if stable_poles:
             ax_mag.axvline(w[gain_margin_freq], color='red', linestyle='--', 
                         label=f"Gain Margin: {gain_margin:.1f} dB")
