@@ -8,64 +8,76 @@ class OutputCompute:
         self.signal_type = signal_type
         self.object_info = object_info
         self.input_info = input_info
-        input_info.prepare_input_derivatives()
-      
+    
     def rk4_step(self, f, t, x, dt):
         k1 = np.array(f(t, x))
         k2 = np.array(f(t + dt/2, x + dt/2 * k1))
         k3 = np.array(f(t + dt/2, x + dt/2 * k2))
         k4 = np.array(f(t + dt,   x + dt * k3))
         return x + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
-    
+            
     def get_system_order(self):
-        _, y_coeffs = self.object_info.get_tf_coefficients()
-        #Order - the higher y index
-        n = max((i for i, b in enumerate(y_coeffs) if b != 0), default=0)
-        return n
+        _, y_coeffs = self.get_tf_without_zeros()
+        return len(y_coeffs) - 1
+
+    def get_tf_without_zeros(self):
+        num, den = self.object_info.get_tf_coefficients()
+        def trim_leading_zeros(coeffs):
+            for i, c in enumerate(coeffs):
+                if c != 0:
+                    return coeffs[i:]
+            return [0]
+        numerator = trim_leading_zeros(num)
+        denominator = trim_leading_zeros(den)
+        return numerator, denominator
+    
+    def update_input_reference(self, new_input_info):
+        self.input_info = new_input_info
+        
+
+    def get_manual_step_input(self, t):
+        return self.input_info.input_derivatives(t, self.input_info.prepare_input_derivatives())
 
     def get_f_function(self, t, x):
-        u_co, y_co = self.object_info.get_tf_coefficients()
-        u_coeffs = list(u_co)  
-        y_coeffs = list(y_co)
-
+        u_co, y_co = self.get_tf_without_zeros()
+        u_coeffs = list(reversed(u_co))  
+        y_coeffs = list(reversed(y_co))
         n = self.get_system_order()
 
-        # u derivatives u(t), u'(t), ...
-        u_vals = self.input_info.input_derivatives(t)
-
-        # y⁽ⁿ⁾ = (a₀*u + a₁*u' + ... - b₀*y - b₁*y' - ...)/bₙ
+        u_vals = self.get_manual_step_input(t)
+        u_vals = u_vals[:len(u_coeffs)]
+        # y⁽ⁿ⁾ = (a0*u + a1*u' + ... - b0*y - b1*y' - ...)/bn
         left = sum(y_coeffs[i] * x[i] for i in range(n))  # y, y', ..., y⁽ⁿ⁻¹⁾
-        right = sum(a * u_vals[i] for i, a in enumerate(u_coeffs) if i < len(u_vals))  # u, u', ..., u⁽ᵐ⁾
+        right = sum(u_coeffs[i] * u_vals[i] for i in range(min(len(u_coeffs), len(u_vals))))  # u, u', ...
         b_n = y_coeffs[n] if n < len(y_coeffs) else 0
         highest_derivative = (right - left) / b_n
 
-        derivatives = list(x[1:n+1])
-        derivatives.append(highest_derivative)  
-        print(derivatives)
+        derivatives = np.zeros_like(x)
+        derivatives[:-1] = x[1:]
+        derivatives[-1] = highest_derivative 
         return derivatives
     
     def simulate_system(self, t_start, t_end, dt):
         # Initialize x
         n = self.get_system_order()
-        x = np.zeros(n + 1)
+        x = np.zeros(n)
         t = t_start
         times = []
         outputs = []
+        inputs = []
 
         # RK4 
         while t <= t_end:
             times.append(t)
             outputs.append(x[0])  
-
-            f = lambda t_val, x_val: self.get_f_function(t_val, x_val)
-
-            x = self.rk4_step(f, t, x, dt)
+            inputs.append(self.get_manual_step_input(t)[0])
+            x = self.rk4_step(lambda t_, x_: self.get_f_function(t_, x_), t, x, dt)
             t += dt
-        return times, outputs
+        return times, inputs, outputs
             
         
     def output_plot(self):
-        times, outputs = self.simulate_system(t_start=0.0, t_end=5.0, dt=0.01)
+        times, inputs, outputs = self.simulate_system(t_start=0.0, t_end=10.0, dt=0.01)
         self.figure = Figure(figsize=(6, 4))
         self.canvas = FigureCanvas(self.figure)
         ax = self.figure.add_subplot(111)  

@@ -63,11 +63,13 @@ class InputFunction:
             case "sine":
                 input_symbolic = self.amplitude * sp.sin(2 * sp.pi * self.frequency * t + self.phase)
             case "square":
-                input_symbolic = self.amplitude * (sp.Heaviside(t % T) - sp.Heaviside((t % T) - T/2))
+                #input_symbolic = self.amplitude * (sp.Heaviside(t % T) - sp.Heaviside((t % T) - T/2))
+                input_symbolic = sp.Piecewise((self.amplitude, sp.Mod(t, T) < T/2),(-self.amplitude, True))
             case "sawtooth":
                 input_symbolic = self.amplitude * ((t % T) / T - 0.5) * 2
             case "rectangle impulse":
-                input_symbolic =  self.amplitude * (sp.Heaviside(t) - sp.Heaviside(t - self.pulse_width))
+                #input_symbolic =  self.amplitude * (sp.Heaviside(t) - sp.Heaviside(t - self.pulse_width))
+                input_symbolic = sp.Piecewise((self.amplitude, (t >= 0) & (t < self.pulse_width)),(0, True))
             case "triangle":
                 input_symbolic = sp.Piecewise((4 * self.amplitude / T * (sp.Mod(t,T)) - self.amplitude, (sp.Mod(t,T)) < T / 2),(-4 * self.amplitude / T * (sp.Mod(t,T)) + 3 * self.amplitude, (sp.Mod(t,T)) >= T / 2))
             case _:
@@ -82,10 +84,39 @@ class InputFunction:
         u3 = sp.diff(u2, t)
         u4 = sp.diff(u3, t)
         u_funcs = [u, u1, u2, u3, u4]
-        self.u_derivatives = [lambdify(t, expr, 'numpy') for expr in u_funcs]
-    
-    def input_derivatives(self, t_val):
-        return [f(t_val) for f in self.u_derivatives]
+        u_derivatives = []
+        u_derivatives = [lambdify(t, f.doit(), 'numpy') for f in u_funcs]
+        return u_derivatives
+
+    def get_manual_sine_derivatives(self, amplitude=1, frequency=1, phase=0):
+        t = sp.Symbol('t')
+        ω = 2 * sp.pi * frequency
+
+        # u(t) = A * sin(ωt + φ)
+        u0 = amplitude * sp.sin(ω * t + phase)
+
+        # u'(t) = Aω * cos(ωt + φ)
+        u1 = amplitude * ω * sp.cos(ω * t + phase)
+
+        # u''(t) = -Aω² * sin(ωt + φ)
+        u2 = -amplitude * ω**2 * sp.sin(ω * t + phase)
+
+        # u'''(t) = -Aω³ * cos(ωt + φ)
+        u3 = -amplitude * ω**3 * sp.cos(ω * t + phase)
+
+        # u⁽⁴⁾(t) = Aω⁴ * sin(ωt + φ)
+        u4 = amplitude * ω**4 * sp.sin(ω * t + phase)
+        derivatives = [
+        lambdify(t, u0, 'numpy'),
+        lambdify(t, u1, 'numpy'),
+        lambdify(t, u2, 'numpy'),
+        lambdify(t, u3, 'numpy'),
+        lambdify(t, u4, 'numpy'),
+    ]
+        return derivatives
+        
+    def input_derivatives(self, t_val, derivatives):
+        return [f(t_val) for f in derivatives]
 
     def input_plot(self):
         t, y = self.input_generate()

@@ -361,6 +361,8 @@ class Window(QMainWindow):
         canvas = self.create_latex_canvas(self.tf_object.get_symbolic_tf())
         simulation_view.addWidget(canvas)
 
+        self.input_function = InputFunction(self.selected_signal)
+        self.output.update_input_reference(self.input_function)
         simulation_view.addWidget(self.input_function.input_plot())
         simulation_view.addWidget(self.output.output_plot())
         simulation_view.addWidget(back_b)
