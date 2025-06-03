@@ -2,6 +2,7 @@ import numpy as np
 import sympy as sp
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from sympy import lambdify
 from scipy.signal import sawtooth
 
 
@@ -72,6 +73,19 @@ class InputFunction:
             case _:
                 print("Error")
         return input_symbolic
+    
+    def prepare_input_derivatives(self):
+        t = sp.Symbol('t')
+        u = self.input_symbolic()
+        u1 = sp.diff(u, t)
+        u2 = sp.diff(u1, t)
+        u3 = sp.diff(u2, t)
+        u4 = sp.diff(u3, t)
+        u_funcs = [u, u1, u2, u3, u4]
+        self.u_derivatives = [lambdify(t, expr, 'numpy') for expr in u_funcs]
+    
+    def input_derivatives(self, t_val):
+        return [f(t_val) for f in self.u_derivatives]
 
     def input_plot(self):
         t, y = self.input_generate()
