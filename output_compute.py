@@ -1,75 +1,75 @@
 import sympy as sp
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import numpy as np
 
 class OutputCompute:
     def __init__(self, signal_type, object_info, input_info):
         self.signal_type = signal_type
         self.object_info = object_info
         self.input_info = input_info
+        input_info.prepare_input_derivatives()
       
-    """def differentation_rk4(self, t_max=10.0, dt=0.01):
-        # Ustawienie osi czasu
-        self.t = np.arange(0, t_max, dt)
-        n = len(self.t)
-        
-        # Pobierz transmitancję jako współczynniki licznika i mianownika
-        numerator, denominator = self.tf_object.get_tf_coefficients()
-        
-        # Sprawdź rząd układu (liczba równa rzędom pochodnych y)
-        order = len(denominator) - 1
+    def rk4_step(self, f, t, x, dt):
+        k1 = np.array(f(t, x))
+        k2 = np.array(f(t + dt/2, x + dt/2 * k1))
+        k3 = np.array(f(t + dt/2, x + dt/2 * k2))
+        k4 = np.array(f(t + dt,   x + dt * k3))
+        return x + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
+    
+    def get_system_order(self):
+        _, y_coeffs = self.object_info.get_tf_coefficients()
+        #Order - the higher y index
+        n = max((i for i, b in enumerate(y_coeffs) if b != 0), default=0)
+        return n
 
-        # Znormalizuj współczynniki, aby najwyższy współczynnik mianownika był 1
-        denominator = [d / denominator[0] for d in denominator]
-        numerator = [n / denominator[0] for n in numerator]
+    def get_f_function(self, t, x):
+        u_co, y_co = self.object_info.get_tf_coefficients()
+        u_coeffs = list(u_co)  
+        y_coeffs = list(y_co)
 
-        # Zdefiniuj funkcję wejściową u(t) (tutaj: sinusoidalna jako przykład)
-        u = np.array([self.input_function.evaluate_numeric(ti) for ti in self.t])
+        n = self.get_system_order()
 
-        # Przygotuj wektor stanu y = [y, y', y'', ...]
-        y = np.zeros((n, order))
-        
-        # Definiujemy układ równań pierwszego rzędu
-        def state_derivative(ti, yi, ui):
-            # yi: aktualny wektor stanu [y, y', y'', ...]
-            derivatives = np.zeros(order)
-            for i in range(order - 1):
-                derivatives[i] = yi[i+1]
+        # u derivatives u(t), u'(t), ...
+        u_vals = self.input_info.input_derivatives(t)
 
-            # Oblicz najwyższą pochodną z równania różniczkowego
-            # y^(n) = -a1*y^(n-1) - a2*y^(n-2) ... + b0*u + b1*u' ...
-            y_terms = sum(-denominator[i+1] * yi[i] for i in range(order - 1))
-            u_terms = 0
-            for j in range(len(numerator)):
-                if j == 0:
-                    u_terms += numerator[-1] * ui
-                elif ti - j*dt >= 0:
-                    u_terms += numerator[-(j+1)] * self.input_function.evaluate_numeric(ti - j*dt)
-            derivatives[-1] = y_terms + u_terms
-            return derivatives
+        # y⁽ⁿ⁾ = (a₀*u + a₁*u' + ... - b₀*y - b₁*y' - ...)/bₙ
+        left = sum(y_coeffs[i] * x[i] for i in range(n))  # y, y', ..., y⁽ⁿ⁻¹⁾
+        right = sum(a * u_vals[i] for i, a in enumerate(u_coeffs) if i < len(u_vals))  # u, u', ..., u⁽ᵐ⁾
+        b_n = y_coeffs[n] if n < len(y_coeffs) else 0
+        highest_derivative = (right - left) / b_n
 
-        # RK4 iteracja
-        for i in range(n - 1):
-            ti = self.t[i]
-            yi = y[i]
-            ui = u[i]
+        derivatives = list(x[1:n+1])
+        derivatives.append(highest_derivative)  
+        print(derivatives)
+        return derivatives
+    
+    def simulate_system(self, t_start, t_end, dt):
+        # Initialize x
+        n = self.get_system_order()
+        x = np.zeros(n + 1)
+        t = t_start
+        times = []
+        outputs = []
 
-            k1 = dt * state_derivative(ti, yi, ui)
-            k2 = dt * state_derivative(ti + dt/2, yi + k1/2, u[i])
-            k3 = dt * state_derivative(ti + dt/2, yi + k2/2, u[i])
-            k4 = dt * state_derivative(ti + dt, yi + k3, u[i])
+        # RK4 
+        while t <= t_end:
+            times.append(t)
+            outputs.append(x[0])  
 
-            y[i+1] = yi + (k1 + 2*k2 + 2*k3 + k4) / 6
+            f = lambda t_val, x_val: self.get_f_function(t_val, x_val)
 
-        # Przypisz wynik do y do wykresu
-        self.y = y[:, 0]
-        return self.y"""
+            x = self.rk4_step(f, t, x, dt)
+            t += dt
+        return times, outputs
+            
         
     def output_plot(self):
+        times, outputs = self.simulate_system(t_start=0.0, t_end=5.0, dt=0.01)
         self.figure = Figure(figsize=(6, 4))
         self.canvas = FigureCanvas(self.figure)
         ax = self.figure.add_subplot(111)  
-        ax.plot(self.t, self.y)
+        ax.plot(times, outputs)
         ax.set_title("Output signal")
         ax.set_xlabel("Time [s]")
         ax.set_ylabel("Amplitude")
