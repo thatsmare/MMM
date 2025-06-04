@@ -120,7 +120,6 @@ class TransferFunctionSimulator:
 
         return derivatives
     
-    
     def get_manual_input(self, t, num_derivatives):
         dt = self.time_step  # Musisz zdefiniować krok czasowy, np. 0.001
         return self.get_manual_input_derivatives(num_derivatives, t, dt)
