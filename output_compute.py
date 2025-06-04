@@ -34,9 +34,8 @@ class OutputCompute:
     def update_input_reference(self, new_input_info):
         self.input_info = new_input_info
         
-
-    def get_manual_step_input(self, t):
-        return self.input_info.input_derivatives(t, self.input_info.prepare_input_derivatives())
+    def get_manual_input(self, t):
+        return self.input_info.input_derivatives(t, self.input_info.get_manual_sine_derivatives())
 
     def get_f_function(self, t, x):
         u_co, y_co = self.get_tf_without_zeros()
@@ -44,7 +43,7 @@ class OutputCompute:
         y_coeffs = list(reversed(y_co))
         n = self.get_system_order()
 
-        u_vals = self.get_manual_step_input(t)
+        u_vals = self.get_manual_input(t)
         u_vals = u_vals[:len(u_coeffs)]
         # y⁽ⁿ⁾ = (a0*u + a1*u' + ... - b0*y - b1*y' - ...)/bn
         left = sum(y_coeffs[i] * x[i] for i in range(n))  # y, y', ..., y⁽ⁿ⁻¹⁾
@@ -70,11 +69,10 @@ class OutputCompute:
         while t <= t_end:
             times.append(t)
             outputs.append(x[0])  
-            inputs.append(self.get_manual_step_input(t)[0])
+            inputs.append(self.get_manual_input(t)[0])
             x = self.rk4_step(lambda t_, x_: self.get_f_function(t_, x_), t, x, dt)
             t += dt
         return times, inputs, outputs
-            
         
     def output_plot(self):
         times, inputs, outputs = self.simulate_system(t_start=0.0, t_end=10.0, dt=0.01)

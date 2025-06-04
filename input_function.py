@@ -88,23 +88,30 @@ class InputFunction:
         u_derivatives = [lambdify(t, f.doit(), 'numpy') for f in u_funcs]
         return u_derivatives
 
+    def get_manual_square_derivatives(self, num_derivatives, amplitude=1, frequency=1, phase=0):
+        t = sp.Symbol('t')
+        T = 1 / frequency
+
+        # Symboliczna postać sygnału square
+        expr = sp.Piecewise(
+            (amplitude, sp.Mod(t, T) < T / 2),
+            (-amplitude, True)
+        )
+
+        derivatives = [expr]
+        for _ in range(1, num_derivatives):
+            expr = sp.diff(expr, t)
+            derivatives.append(expr)
+
+        return [lambdify(t, d, 'numpy') for d in derivatives]
+
     def get_manual_sine_derivatives(self, amplitude=1, frequency=1, phase=0):
         t = sp.Symbol('t')
         ω = 2 * sp.pi * frequency
-
-        # u(t) = A * sin(ωt + φ)
         u0 = amplitude * sp.sin(ω * t + phase)
-
-        # u'(t) = Aω * cos(ωt + φ)
         u1 = amplitude * ω * sp.cos(ω * t + phase)
-
-        # u''(t) = -Aω² * sin(ωt + φ)
         u2 = -amplitude * ω**2 * sp.sin(ω * t + phase)
-
-        # u'''(t) = -Aω³ * cos(ωt + φ)
         u3 = -amplitude * ω**3 * sp.cos(ω * t + phase)
-
-        # u⁽⁴⁾(t) = Aω⁴ * sin(ωt + φ)
         u4 = amplitude * ω**4 * sp.sin(ω * t + phase)
         derivatives = [
         lambdify(t, u0, 'numpy'),

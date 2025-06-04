@@ -49,42 +49,6 @@ class BodePlot:
         phase =np.unwrap(np.angle(plot_line, deg=True))
         if self.correct_phase: phase -= 360
         
-        """# --- Zapas wzmocnienia (gain margin) ---
-        gain_margin = None
-        gain_margin_freq = None
-        for i in range(len(phase) - 1):
-            if (phase[i] + 180) * (phase[i + 1] + 180) < 0:
-                # Interpolacja liniowa częstotliwości
-                w1, w2 = w[i], w[i + 1]
-                p1, p2 = phase[i], phase[i + 1]
-                m1, m2 = magnitude[i], magnitude[i + 1]
-                w_cross = w1 + (w2 - w1) * (-180 - p1) / (p2 - p1)
-                mag_cross = m1 + (m2 - m1) * (w_cross - w1) / (w2 - w1)
-                if mag_cross < 0:
-                    gain_margin = -mag_cross
-                    gain_margin_freq = w_cross
-                break  # bierzemy pierwsze przecięcie
-
-        # --- Zapas fazy (phase margin) ---
-        phase_margin = None
-        phase_margin_freq = None
-        for i in range(len(magnitude) - 1):
-            if magnitude[i] * magnitude[i + 1] < 0:
-                w1, w2 = w[i], w[i + 1]
-                m1, m2 = magnitude[i], magnitude[i + 1]
-                p1, p2 = phase[i], phase[i + 1]
-                w_cross = w1 + (w2 - w1) * (0 - m1) / (m2 - m1)
-                phase_cross = p1 + (p2 - p1) * (w_cross - w1) / (w2 - w1)
-                phase_margin = 180 + phase_cross
-                phase_margin_freq = w_cross
-                break
-
-        # --- Ocena stabilności ---
-        self.gain_margin = gain_margin
-        self.phase_margin = phase_margin
-        self.stable = (gain_margin is not None and gain_margin > 0 and phase_margin is not None and phase_margin > 0)
-"""   
-        
         #STABILITY
         zeros, poles = self.tf_object.zeros_and_poles()
         
