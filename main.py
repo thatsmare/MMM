@@ -12,7 +12,6 @@ from object_transfer import ObjectTransfer
 from output_compute import OutputCompute
 from input_function import InputFunction
 from bode_plot import BodePlot
-from display_functions import DisplayFunctions
         
 class Window(QMainWindow):
     def __init__(self):
@@ -85,6 +84,14 @@ class Window(QMainWindow):
                                             float(self.triangle_amp_input.text()), 
                                             float(self.triangle_freq_input.text()), 
                                             float(self.triangle_phase_input.text()))
+        elif self.impulse_button.isChecked():
+            self.selected_signal = "impulse"
+            self.input_function = InputFunction("impulse", 
+                                            float(self.impulse_amp_input.text()))
+        elif self.step_button.isChecked():
+            self.selected_signal = "step"
+            self.input_function = InputFunction("step", 
+                                            float(self.step_amp_input.text()))
         self.update_simulate_button_state()
 
     def _labeled_input(self, label_text, widget):
@@ -101,6 +108,8 @@ class Window(QMainWindow):
         self.sawtooth_params.setVisible(self.sawtooth_button.isChecked())
         self.rec_imp_params.setVisible(self.rec_imp_button.isChecked())
         self.triangle_params.setVisible(self.triangle_button.isChecked())
+        self.impulse_params.setVisible(self.impulse_button.isChecked())
+        self.step_params.setVisible(self.step_button.isChecked())
 
     def create_latex_canvas(self, expr):
         fig, ax = plt.subplots(figsize=(6, 2), dpi=100)
@@ -116,7 +125,8 @@ class Window(QMainWindow):
         title.setAlignment(Qt.AlignCenter)
 
         description = QLabel("Symulator umożliwia uzyskanie odpowiedzi czasowych układu na pobudzenie sygnałem" \
-        " prostokątnym o nieskończonym czasie trwania, impulsem, sygnałem piłokształtnym, trójkątnym i sinusoidalnym o zadanych parametrach. Możliwa jest zmiana wszystkich" \
+        " prostokątnym o nieskończonym czasie trwania, impulsem prostokątnym, skokiem jednostkowym, impulsem jednostkowym, sygnałem piłokształtnym," \
+        " trójkątnym i sinusoidalnym o zadanych parametrach. Możliwa jest zmiana wszystkich" \
         " współczynników licznika i mianownika transmitancji. Program wykreśla charakterystyki częstotliwościowe Bodego oraz sygnał wejściowy" \
         " i wyjściowy, na podstawie czego określa stabliność układu.")
         description.setWordWrap(True)
@@ -199,8 +209,11 @@ class Window(QMainWindow):
        self.sawtooth_button = QRadioButton("Sawtooth signal")
        self.rec_imp_button = QRadioButton("Rectangle impulse")
        self.triangle_button = QRadioButton("Triangle signal")
+       self.impulse_button = QRadioButton("Impulse")
+       self.step_button = QRadioButton("Step")
+      
 
-       if self.selected_signal == "sine":
+       if self.selected_signal == "sine": 
             self.sine_button.setChecked(True)
        elif self.selected_signal == "square":
             self.square_button.setChecked(True)
@@ -210,11 +223,17 @@ class Window(QMainWindow):
             self.rec_imp_button.setChecked(True)
        elif self.selected_signal == "triangle":
             self.triangle_button.setChecked(True)
+       elif self.selected_signal == "impulse":
+            self.impulse_button.setChecked(True)
+       elif self.selected_signal == "step":
+            self.step_button.setChecked(True)
        self.sine_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
        self.square_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
        self.sawtooth_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
        self.rec_imp_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
        self.triangle_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
+       self.impulse_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
+       self.step_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
 
        #Sine parameters
        self.sine_params = QWidget()
@@ -250,7 +269,7 @@ class Window(QMainWindow):
        square_layout.addLayout(self._labeled_input("Phase [rad]:", self.square_phase_input))
        self.square_params.setLayout(square_layout)
 
-       #Sawtooth params
+       #Sawtooth parameters
        self.sawtooth_params = QWidget()
        sawtooth_layout = QVBoxLayout()
        self.sawtooth_freq_input = QLineEdit(str(self.input_function.frequency))
@@ -267,7 +286,7 @@ class Window(QMainWindow):
        sawtooth_layout.addLayout(self._labeled_input("Phase [rad]:", self.sawtooth_phase_input))
        self.sawtooth_params.setLayout(sawtooth_layout)
 
-       #Rectangle impulse params
+       #Rectangle impulse parameters
        self.rec_imp_params = QWidget()
        rec_imp_layout = QVBoxLayout()
        self.rec_imp_amp_input = QLineEdit(str(self.input_function.amplitude))
@@ -281,7 +300,7 @@ class Window(QMainWindow):
        rec_imp_layout.addLayout(self._labeled_input("Pulse width [s]:", self.rec_imp_width_input))
        self.rec_imp_params.setLayout(rec_imp_layout)
 
-       #Triangle params
+       #Triangle parameters
        self.triangle_params = QWidget()
        triangle_layout = QVBoxLayout()
        self.triangle_freq_input = QLineEdit(str(self.input_function.frequency))
@@ -298,6 +317,29 @@ class Window(QMainWindow):
        triangle_layout.addLayout(self._labeled_input("Phase [rad]:", self.triangle_phase_input))
        self.triangle_params.setLayout(triangle_layout)
 
+       #Impulse parameters
+       self.impulse_params = QWidget()
+       impulse_layout = QVBoxLayout()
+       self.impulse_amp_input = QLineEdit(str(self.input_function.amplitude))
+       for w in [self.impulse_amp_input]:
+           w.setFixedWidth(80)
+           w.setAlignment(Qt.AlignLeft)
+       self.impulse_amp_input.editingFinished.connect(lambda: self.update_input(self.impulse_amp_input, "amplitude"))
+       impulse_layout.addLayout(self._labeled_input("Amplitude [V]:", self.impulse_amp_input))
+       self.impulse_params.setLayout(impulse_layout)
+
+       #Step parameters
+       self.step_params = QWidget()
+       step_layout = QVBoxLayout()
+       self.step_amp_input = QLineEdit(str(self.input_function.amplitude))
+       for w in [self.step_amp_input]:
+           w.setFixedWidth(80)
+           w.setAlignment(Qt.AlignLeft)
+       self.step_amp_input.editingFinished.connect(lambda: self.update_input(self.step_amp_input, "amplitude"))
+       step_layout.addLayout(self._labeled_input("Amplitude [V]:", self.step_amp_input))
+       self.step_params.setLayout(step_layout)
+
+
        signal_layout.addWidget(self.sine_button)
        signal_layout.addWidget(self.sine_params)
        signal_layout.addWidget(self.square_button)
@@ -308,6 +350,10 @@ class Window(QMainWindow):
        signal_layout.addWidget(self.rec_imp_params)
        signal_layout.addWidget(self.triangle_button)
        signal_layout.addWidget(self.triangle_params)
+       signal_layout.addWidget(self.impulse_button)
+       signal_layout.addWidget(self.impulse_params)
+       signal_layout.addWidget(self.step_button)
+       signal_layout.addWidget(self.step_params)
 
        signal_group_box.setLayout(signal_layout)
        menu_view.addWidget(signal_group_box)
@@ -332,9 +378,7 @@ class Window(QMainWindow):
 
 
     def simulation(self):
-
         simulation_view= QVBoxLayout()
-
         title = QLabel("<h3>Simulation</h3>")
         title.setAlignment(Qt.AlignCenter)
 
@@ -361,10 +405,16 @@ class Window(QMainWindow):
         canvas = self.create_latex_canvas(self.tf_object.get_symbolic_tf())
         simulation_view.addWidget(canvas)
 
-        self.input_function = InputFunction(self.selected_signal)
         self.output = OutputCompute(self.selected_signal, self.tf_object, self.input_function)
+
+        order_num, order_den = self.output.get_system_order()
         simulation_view.addWidget(self.input_function.input_plot())
-        simulation_view.addWidget(self.output.output_plot())
+        if order_num<=order_den:
+            simulation_view.addWidget(self.output.output_plot())
+        else:
+            error_label = QLabel(f"Wrong transfer function")
+            error_label.setStyleSheet("color: red")
+            simulation_view.addWidget(error_label)
         simulation_view.addWidget(back_b)
           
 #run

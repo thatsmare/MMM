@@ -1,8 +1,7 @@
-import sympy as sp
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import numpy as np
-from scipy.signal import sawtooth
+from scipy.signal import sawtooth, square
 
 class OutputCompute:
     def __init__(self, signal_type, object_info, input_info):
@@ -10,111 +9,124 @@ class OutputCompute:
         self.object_info = object_info
         self.input_info = input_info
         self.num, self.den = self.object_info.get_tf_coefficients()
-        self.time_step = 0.01
+        self.a3, self.a2, self.a1, self.a0 = self.num
+        self.b4, self.b3, self.b2, self.b1, self.b0 = self.den
+        self.dt = 0.01
         self.input_type = self.input_info.signal_type
         self.amplitude = self.input_info.amplitude
         self.frequency = self.input_info.frequency
         self.phase = self.input_info.phase
         self.pulse_width = self.input_info.pulse_width
-    
-    def get_tf_without_zeros(self):
-        def trim_leading_zeros(coeffs):
-            for i, c in enumerate(coeffs):
-                if c != 0:
-                    return coeffs[i:]
-            return [0]
-        numerator = trim_leading_zeros(self.num)
-        denominator = trim_leading_zeros(self.den)
-        return numerator, denominator
 
     def get_system_order(self):
-        _, y_coeffs = self.get_tf_without_zeros()
-        return len(y_coeffs) - 1
+        def first_nonzero_index(coeffs):
+            for i, c in enumerate(coeffs):
+                if c != 0:
+                    return i
+            return len(coeffs)  # all zeros
+        num_order = len(self.num) - first_nonzero_index(self.num) - 1
+        den_order = len(self.den) - first_nonzero_index(self.den) - 1
+        return num_order, den_order
 
-    def rk4_step(self, f, t, x, dt):
-        k1 = np.array(f(t, x))
-        k2 = np.array(f(t + dt / 2, x + dt / 2 * k1))
-        k3 = np.array(f(t + dt / 2, x + dt / 2 * k2))
-        k4 = np.array(f(t + dt, x + dt * k3))
-        return x + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-        
-    def get_manual_input_derivatives(self, num_derivatives, t, dt):
-        derivatives = []
-        u_t = self.get_manual_input_value(t)
-        derivatives.append(u_t)
-
-        for k in range(1, num_derivatives):
-            u_prev = self.get_manual_input_value(t - dt)
-            deriv = (derivatives[k-1] - u_prev) / dt
-            derivatives.append(deriv)
-
-        return derivatives
-    
-    def get_manual_input(self, t, num_derivatives):
-        dt = self.time_step  # Musisz zdefiniować krok czasowy, np. 0.001
-        return self.get_manual_input_derivatives(num_derivatives, t, dt)
-    
     def get_manual_input_value(self, t):
         if self.input_type == "sine":
             return self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
         elif self.input_type == "sawtooth":
             return self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase)
         elif self.input_type == "square":
-            temp = self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
-            return self.amplitude * np.where(temp>=0, 1, -1)
+            return self.amplitude * square(2 * np.pi * self.frequency * t + self.phase)
         elif self.input_type == "rectangle impulse":
             return self.amplitude * np.where((t>0) & (t<self.pulse_width), 1, 0)
         elif self.input_type == "triangle":
-            return self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase, width=0.5 )
+            return self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase, width=0.5)
+        elif self.input_type == "impulse":
+            u = np.zeros_like(t)
+            idx = np.argmin(np.abs(t - 0.01))
+            u[idx] = self.amplitude
+            return u
+        elif self.input_type == "step":
+            return self.amplitude * np.ones_like(t)
     
-    def get_f_function(self, t, x):
-        u_co, y_co = self.get_tf_without_zeros()
-        u_coeffs = list(reversed(u_co))
-        y_coeffs = list(reversed(y_co))
-        n = self.get_system_order()
+    def get_manual_input_derivatives(self, t):
+        u = self.get_manual_input_value(t) 
+        N = len(t) 
+        du1 = np.zeros(N)
+        du2 = np.zeros(N)
+        du3 = np.zeros(N)
+    
+        if self.a1 != 0.0 or self.a2 != 0.0 or self.a3 != 0.0:
+            for i in range (1,N):
+                du1[i] = (u[i] - u[i-1])/self.dt
+        if self.a2 != 0.0 or self.a3 != 0.0:
+            for i in range (2,N):
+                du2[i] = (du1[i] - du1[i-1])/self.dt
+        if self.a3 != 0.0:
+            for i in range (3,N):
+                du3[i] = (du2[i] - du2[i-1])/self.dt
+        return u, du1, du2, du3
 
-        u_vals = self.get_manual_input(t, len(u_coeffs))
-        u_vals = u_vals[:len(u_coeffs)]
+    def euler_output(self, t):
+        u_coeffs = self.num[::-1]    #reverse list
+        y_coeffs = self.den[::-1]
+        dt = self.dt
 
-        left = sum(y_coeffs[i] * x[i] for i in range(n))  # y, y', ..., y^(n-1)
-        right = sum(u_coeffs[i] * u_vals[i] for i in range(len(u_coeffs)))  # u, u', ...
-        b_n = y_coeffs[n] if n < len(y_coeffs) else 0
+        a0, a1, a2, a3, = u_coeffs
+        b0, b1, b2, b3, b4 = y_coeffs
+        _, n_den = self.get_system_order()
 
-        highest_derivative = (right - left) / b_n
+        u, du1, du2, du3 = self.get_manual_input_derivatives(t)
+        N = len(t)
+        y = np.zeros(N)
+        dy1 = np.zeros(N)
+        dy2 = np.zeros(N)
+        dy3 = np.zeros(N)
+        dy4 = np.zeros(N)
 
-        derivatives = np.zeros_like(x)
-        derivatives[:-1] = x[1:]
-        derivatives[-1] = highest_derivative
-
-        return derivatives
-
-    def simulate_system(self, t_start, t_end, dt):
-        n = self.get_system_order()
-        x = np.zeros(n)
-        t = t_start
-        times = []
-        outputs = []
-        inputs = []
-
-        while t <= t_end:
-            times.append(t)
-            outputs.append(x[0])
-            inputs.append(self.get_manual_input(t, len(self.get_tf_without_zeros()[0]))[0])
-            x = self.rk4_step(lambda t_, x_: self.get_f_function(t_, x_), t, x, dt)
-            t += dt
-        return times, inputs, outputs
+        if n_den == 4:
+            for k in range(4, N):
+                dy4[k] = (a3*du3[k] + a2*du2[k] + a1*du1[k] + a0*u[k] - b3*dy3[k-1] - b2*dy2[k-1] - b1*dy1[k-1] - b0*y[k-1]) / b4
+                dy3[k] = dy3[k-1] + dt * dy4[k]
+                dy2[k] = dy2[k-1] + dt * dy3[k]
+                dy1[k] = dy1[k-1] + dt * dy2[k]
+                y[k] = y[k-1] + dt * dy1[k]
+        elif n_den == 3:
+            for k in range(3, N):
+                dy3[k] = (a3*du3[k] + a2*du2[k] + a1*du1[k] + a0*u[k] - b2*dy2[k-1] - b1*dy1[k-1] - b0*y[k-1]) / b3
+                dy2[k] = dy2[k-1] + dt * dy3[k]
+                dy1[k] = dy1[k-1] + dt * dy2[k]
+                y[k] = y[k-1] + dt * dy1[k]
+        elif n_den == 2:
+            for k in range(2, N):
+                dy2[k] = (a2*du2[k] + a1*du1[k] + a0*u[k] - b1*dy1[k-1] - b0*y[k-1]) / b2
+                dy1[k] = dy1[k-1] + dt * dy2[k]
+                y[k] = y[k-1] + dt * dy1[k]
+        elif n_den == 1:
+            for k in range(1, N):
+                dy1[k] = (a1*du1[k] + a0*u[k]- b0*y[k-1]) / b1
+                y[k] = y[k-1] + dt * dy1[k]
+        elif n_den == 0:
+            for k in range(N):
+                y[k] = a0*u[k] / b0
+        return y
         
+    def simulate_system(self, t_start, t_end):
+        dt=self.dt
+        t = np.arange(t_start, t_end + dt, dt) 
+        u, _, _, _ = self.get_manual_input_derivatives(t)  
+        y = self.euler_output(t)  
+        return t, u, y
+    
     def output_plot(self):
-        times, inputs, outputs = self.simulate_system(t_start=0.0, t_end=10.0, dt=0.01)
+        times, inputs, outputs = self.simulate_system(0.0, 10.0)
         self.figure = Figure(figsize=(6, 4))
         self.canvas = FigureCanvas(self.figure)
         ax = self.figure.add_subplot(111)  
-        ax.plot(times, outputs)
+        ax.plot(times, outputs, label="y(t)")
         ax.set_title("Output signal")
         ax.set_xlabel("Time [s]")
-        ax.set_ylabel("Amplitude")
+        ax.set_ylabel("y(t)")
         ax.grid(True)
         self.canvas.draw()
-        return self.canvas   
+        return self.canvas  
 
     
