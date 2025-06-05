@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 
 class TransferFunctionSimulator:
     def __init__(self):
-        self.a3, self.a2, self.a1, self.a0 = 0, 0, 3, 1  
-        self.b4, self.b3, self.b2, self.b1, self.b0 = 0, 0, 0, 0, 2  
-        self.input_type = "square"
+        self.a3, self.a2, self.a1, self.a0 = 0, 8, 3, 1  
+        self.b4, self.b3, self.b2, self.b1, self.b0 = 0, 5, 4, 3, 2  
+        self.input_type = "sine"
         self.amplitude = 2
         self.frequency = 1
         self.phase = 0
@@ -41,13 +41,10 @@ class TransferFunctionSimulator:
         elif self.input_type == "triangle":
             return self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase, width=0.5)
         elif self.input_type == "impulse":
-            u = np.zeros_like(t)
-            idx = np.argmin(np.abs(t - 0.01))
-            u[idx] = self.amplitude
-            return u
+            return self.amplitude if abs(t - 0.01) < self.dt / 2 else 0
         elif self.input_type == "step":
             return self.amplitude * np.ones_like(t)
-    
+
     def get_manual_input_derivatives(self, t):
         u = self.get_manual_input_value(t) 
         N = len(t) 
@@ -110,6 +107,81 @@ class TransferFunctionSimulator:
             for k in range(N):
                 y[k] = a0*u[k] / b0
         return y
+    
+    #--------------------------------------------------------------------------
+    
+    def rk4_step(self, f, t, x):
+        dt = self.dt 
+        k1 = np.array(f(t, x))
+        k2 = np.array(f(t + dt / 2, x + dt / 2 * k1))
+        k3 = np.array(f(t + dt / 2, x + dt / 2 * k2))
+        k4 = np.array(f(t + dt, x + dt * k3))
+        return x + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+    
+    def get_manual_input_derivatives_at(self, t):
+        dt = self.dt
+        u = self.get_manual_input_value(t)
+        u1 = self.get_manual_input_value(t - dt)
+        u2 = self.get_manual_input_value(t - 2 * dt)
+        u3 = self.get_manual_input_value(t - 3 * dt)
+
+        du1 = (u - u1) / dt
+        du2 = (u - 2 * u1 + u2) / dt**2
+        du3 = (u - 3 * u1 + 3 * u2 - u3) / dt**3
+        return u, du1, du2, du3
+
+    def get_f_function(self, t, x):
+        u_co, y_co = self.get_tf()
+        u_coeffs = u_co[::-1]    #reverse list
+        y_coeffs = y_co[::-1]
+
+        a0, a1, a2, a3, = u_coeffs
+        b0, b1, b2, b3, b4 = y_coeffs
+        _, n_den = self.get_system_order()
+
+        u, du1, du2, du3 = self.get_manual_input_derivatives_at(t)
+        dy = 0
+
+        if n_den == 4:
+            dy = (a3 * du3 + a2 * du2 + a1 * du1 + a0 * u
+                  - b3 * x[3] - b2 * x[2] - b1 * x[1] - b0 * x[0]) / b4
+        elif n_den == 3:
+            dy = (a3 * du3 + a2 * du2 + a1 * du1 + a0 * u
+                  - b2 * x[2] - b1 * x[1] - b0 * x[0]) / b3
+        elif n_den == 2:
+            dy = (a2 * du2 + a1 * du1 + a0 * u
+                  - b1 * x[1] - b0 * x[0]) / b2
+        elif n_den == 1:
+            dy = (a1 * du1 + a0 * u - b0 * x[0]) / b1
+        elif n_den == 0:
+            dy = a0 * u / b0
+
+        derivatives = np.zeros_like(x)
+        for j in range(n_den - 1):
+            derivatives[j] = x[j + 1]
+        derivatives[n_den - 1] = dy
+        return derivatives
+        
+    def simulate_rk(self, t_start, t_end):
+        dt=self.dt
+        _, n = self.get_system_order()
+        x = np.zeros(n)
+        t = t_start
+        times = []
+        outputs = []
+        inputs = []
+
+        while t <= t_end:
+            times.append(t)
+            outputs.append(x[0])
+            inputs.append(self.get_manual_input_value(t))
+            x = self.rk4_step(lambda t_, x_: self.get_f_function(t_, x_), t, x)
+            t += dt
+        return np.array(times), np.array(inputs), np.array(outputs)
+    
+
+
+    #------------------------------------------------------------------------------------------------
         
     def simulate_system(self, t_start, t_end):
         dt=self.dt
@@ -120,6 +192,7 @@ class TransferFunctionSimulator:
     
     def output_plot(self):
         times, inputs, outputs = self.simulate_system(0.0, 10.0)
+        times1, inputs1, outputs1 = self.simulate_rk(0.0, 10.0)
         plt.figure(figsize=(10, 5))
 
         plt.subplot(2, 1, 1)
@@ -130,7 +203,8 @@ class TransferFunctionSimulator:
         plt.legend()
 
         plt.subplot(2, 1, 2)
-        plt.plot(times, outputs, label="y(t) - RK4")
+        plt.plot(times, outputs, label="y(t) - euler")
+        plt.plot(times1, outputs1, label="y(t) - RK4", linestyle="--")
         plt.xlabel("Czas [s]")
         plt.ylabel("y(t)")
         plt.grid(True)
@@ -144,71 +218,3 @@ sim.output_plot()
 
 
 
-"""def get_manual_triangle_derivatives(self, num_derivatives):
-        t = sp.Symbol('t')
-        T = 1 / self.frequency
-        A = self.amplitude
-        mod = sp.Mod(t, T)
-        expr = sp.Piecewise((4 * A / T * mod - A, mod < T / 2),(-4 * A / T * mod + 3 * A, mod >= T / 2))
-        derivatives = [expr]
-        for _ in range(1, num_derivatives):
-            expr = sp.diff(expr, t)
-            derivatives.append(expr)
-        return [lambdify(t, d, 'numpy') for d in derivatives]
-
-    def get_manual_rectangle_impulse_derivatives(self, num_derivatives):
-        t = sp.Symbol('t')
-        input_symbolic = sp.Piecewise((self.amplitude, (t >= 0) & (t < self.pulse_width)),(0, True))
-        derivatives = [input_symbolic]
-        for _ in range(1, num_derivatives):
-            input_symbolic = sp.diff(input_symbolic, t)
-            derivatives.append(input_symbolic)
-        return [lambdify(t, d, 'numpy') for d in derivatives]
-
-    def get_manual_sawtooth_derivatives(self, num_derivatives):
-        t = sp.Symbol('t')
-        T = 1 / self.frequency
-        expr = self.amplitude * ((sp.Mod(t, T)) / T - 0.5) * 2
-        derivatives = [expr]
-        for _ in range(1, num_derivatives):
-            expr = sp.diff(expr, t)
-            derivatives.append(expr)
-        return [lambdify(t, d, 'numpy') for d in derivatives]
-
-    def get_manual_square_derivatives(self, num_derivatives):
-        t = sp.Symbol('t')
-        T = 1 / self.frequency
-        expr = sp.Piecewise((self.amplitude, sp.Mod(t, T) < T / 2),(-self.amplitude, True))
-        derivatives = [expr]
-        for _ in range(1, num_derivatives):
-            expr = sp.diff(expr, t)
-            derivatives.append(expr)
-        return [lambdify(t, d, 'numpy') for d in derivatives]
-
-    def get_manual_sine_derivatives(self, num_derivatives):
-        t = sp.Symbol('t')
-        ω = 2 * sp.pi * self.frequency
-        expr = self.amplitude * sp.sin(ω * t + self.phase)
-        derivatives = [expr]
-        for _ in range(1, num_derivatives):
-            expr = sp.diff(expr, t)
-            derivatives.append(expr)
-        return [lambdify(t, d, 'numpy') for d in derivatives]
-    
-    def get_manual_input(self, t, num_derivatives):
-        if self.input_type == "sine":
-            derivatives = self.get_manual_sine_derivatives(num_derivatives)
-        elif self.input_type == "square":
-            derivatives = self.get_manual_square_derivatives(num_derivatives)
-        elif self.input_type == "sawtooth":
-            derivatives = self.get_manual_sawtooth_derivatives(num_derivatives)
-        elif self.input_type == "rectangle impulse":
-            derivatives = self.get_manual_rectangle_impulse_derivatives(num_derivatives)
-        elif self.input_type == "triangle":
-            derivatives = self.get_manual_triangle_derivatives(num_derivatives)
-        else:
-            raise ValueError(f"Unsupported input_type: {self.input_type}")
-        return self.input_derivatives(t, derivatives)
-    
-    def input_derivatives(self, t_val, derivatives):
-        return [f(t_val) for f in derivatives]"""

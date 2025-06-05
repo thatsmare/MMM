@@ -1,7 +1,6 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import numpy as np
-from scipy.signal import sawtooth, square
 
 class OutputCompute:
     def __init__(self, signal_type, object_info, input_info):
@@ -32,13 +31,17 @@ class OutputCompute:
         if self.input_type == "sine":
             return self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
         elif self.input_type == "sawtooth":
-            return self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase)
+            T = 1/ self.frequency
+            return (2 * self.amplitude / T) * (t % T) - self.amplitude
         elif self.input_type == "square":
-            return self.amplitude * square(2 * np.pi * self.frequency * t + self.phase)
+            temp=np.sin(2 * np.pi * self.frequency * t + self.phase)
+            return self.amplitude * np.where(temp >= 0, 1, -1)
         elif self.input_type == "rectangle impulse":
             return self.amplitude * np.where((t>0) & (t<self.pulse_width), 1, 0)
         elif self.input_type == "triangle":
-            return self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase, width=0.5)
+            T = 1/ self.frequency
+            t_mod = np.mod(t,T)
+            return self.amplitude * (1 - 4 * np.abs(t_mod / T - 0.5))
         elif self.input_type == "impulse":
             u = np.zeros_like(t)
             idx = np.argmin(np.abs(t - 0.01))

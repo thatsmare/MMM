@@ -1,8 +1,6 @@
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from scipy.signal import sawtooth, square
-
 
 class InputFunction:
     def __init__(self, signal_type, amplitude=1.0, frequency=1.0, phase=0.0, duration=10.0, pulse_width=1.0, sample_rate=1000):
@@ -33,15 +31,17 @@ class InputFunction:
     def input_generate(self):
         if self.signal_type == "sawtooth":
             t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
-            y = self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase)
-            return t,y
+            T = 1/ self.frequency
+            y = (2 * self.amplitude / T) * (t % T) - self.amplitude
+            return t, y
         elif self.signal_type == "sine":
             t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
             y = self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
             return t, y
         elif self.signal_type == "square":
             t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
-            y = self.amplitude * square(2 * np.pi * self.frequency * t + self.phase)
+            temp=np.sin(2 * np.pi * self.frequency * t + self.phase)
+            y = self.amplitude * np.where(temp >= 0, 1, -1)
             return t, y
         elif self.signal_type == "rectangle impulse":
             t = np.linspace(0, self.pulse_width + 1, int(self.duration * self.sample_rate), endpoint=False)
@@ -49,7 +49,9 @@ class InputFunction:
             return t, y
         elif self.signal_type == "triangle":
             t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
-            y = self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase, width=0.5 )
+            T = 1/ self.frequency
+            t_mod = np.mod(t,T)
+            y = self.amplitude * (1 - 4 * np.abs(t_mod / T - 0.5))
             return t, y
         elif self.signal_type == "impulse":
             t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)

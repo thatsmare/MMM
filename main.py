@@ -71,8 +71,7 @@ class Window(QMainWindow):
             self.selected_signal = "sawtooth"
             self.input_function = InputFunction("sawtooth", 
                                             float(self.sawtooth_amp_input.text()), 
-                                            float(self.sawtooth_freq_input.text()), 
-                                            float(self.sawtooth_phase_input.text()))
+                                            float(self.sawtooth_freq_input.text()))
         elif self.rec_imp_button.isChecked():
             self.selected_signal = "rectangle impulse"
             self.input_function = InputFunction("rectangle impulse", 
@@ -82,8 +81,7 @@ class Window(QMainWindow):
             self.selected_signal = "triangle"
             self.input_function = InputFunction("triangle", 
                                             float(self.triangle_amp_input.text()), 
-                                            float(self.triangle_freq_input.text()), 
-                                            float(self.triangle_phase_input.text()))
+                                            float(self.triangle_freq_input.text()))
         elif self.impulse_button.isChecked():
             self.selected_signal = "impulse"
             self.input_function = InputFunction("impulse", 
@@ -274,16 +272,13 @@ class Window(QMainWindow):
        sawtooth_layout = QVBoxLayout()
        self.sawtooth_freq_input = QLineEdit(str(self.input_function.frequency))
        self.sawtooth_amp_input = QLineEdit(str(self.input_function.amplitude))
-       self.sawtooth_phase_input = QLineEdit(str(self.input_function.phase))
-       for w in [self.sawtooth_freq_input, self.sawtooth_amp_input, self.sawtooth_phase_input]:
+       for w in [self.sawtooth_freq_input, self.sawtooth_amp_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
        self.sawtooth_freq_input.editingFinished.connect(lambda: self.update_input(self.sawtooth_freq_input, "frequency"))
        self.sawtooth_amp_input.editingFinished.connect(lambda: self.update_input(self.sawtooth_amp_input, "amplitude"))
-       self.sawtooth_phase_input.editingFinished.connect(lambda: self.update_input(self.sawtooth_phase_input, "phase"))
        sawtooth_layout.addLayout(self._labeled_input("Frequency [Hz]:", self.sawtooth_freq_input))
        sawtooth_layout.addLayout(self._labeled_input("Amplitude [V]:", self.sawtooth_amp_input))
-       sawtooth_layout.addLayout(self._labeled_input("Phase [rad]:", self.sawtooth_phase_input))
        self.sawtooth_params.setLayout(sawtooth_layout)
 
        #Rectangle impulse parameters
@@ -305,16 +300,13 @@ class Window(QMainWindow):
        triangle_layout = QVBoxLayout()
        self.triangle_freq_input = QLineEdit(str(self.input_function.frequency))
        self.triangle_amp_input = QLineEdit(str(self.input_function.amplitude))
-       self.triangle_phase_input = QLineEdit(str(self.input_function.phase))
-       for w in [self.triangle_freq_input, self.triangle_amp_input, self.triangle_phase_input]:
+       for w in [self.triangle_freq_input, self.triangle_amp_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
        self.triangle_freq_input.editingFinished.connect(lambda: self.update_input(self.triangle_freq_input, "frequency"))
        self.triangle_amp_input.editingFinished.connect(lambda: self.update_input(self.triangle_amp_input, "amplitude"))
-       self.triangle_phase_input.editingFinished.connect(lambda: self.update_input(self.triangle_phase_input, "phase"))
        triangle_layout.addLayout(self._labeled_input("Frequency [Hz]:", self.triangle_freq_input))
        triangle_layout.addLayout(self._labeled_input("Amplitude [V]:", self.triangle_amp_input))
-       triangle_layout.addLayout(self._labeled_input("Phase [rad]:", self.triangle_phase_input))
        self.triangle_params.setLayout(triangle_layout)
 
        #Impulse parameters
