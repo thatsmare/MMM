@@ -12,22 +12,6 @@ class InputFunction:
         self.sample_rate = sample_rate
         self.pulse_width = pulse_width
 
-    def update_input_function(self, attr_name, value):
-        try:
-            value = float(value)
-        except ValueError:
-            raise ValueError(f"{attr_name.capitalize()} must be a number.")
- 
-        if attr_name == "frequency" and value <= 0:
-            raise ValueError("Wrong frequency.")
-        if attr_name == "amplitude" and value <= 0:
-            raise ValueError("Wrong amplitude.")
-        if attr_name == "phase" and not (-np.pi <= value <= np.pi):
-            raise ValueError("Wrong phase [-pi,pi].")
-        if attr_name == "pulse width" and value <= 0:
-            raise ValueError("Wrong pulse width.")
-        setattr(self, attr_name, value)
-
     def input_generate(self):
         if self.signal_type == "sawtooth":
             t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)

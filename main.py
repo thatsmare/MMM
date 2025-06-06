@@ -22,37 +22,115 @@ class Window(QMainWindow):
         self.output = OutputCompute(self.selected_signal, self.tf_object, self.input_function)
         self.setWindowTitle("Transfer Function I/O Illustration")
         self.setGeometry(100, 100, 800, 800)
-        self.transfer_valid = True
-        self.signal_valid = True
         self.start_menu()
 
-    def update_simulate_button_state(self):
-        self.simulate_button.setEnabled(self.signal_valid)
+    def check_input_values(self):
+        if self.check_transfer_values() == False:
+            self.error_label.setText("Wrong transfer function")
+            self.error_label.setStyleSheet("color: red")
+            return False
+        
+        numerator, denominator = self.tf_object.get_tf_coefficients()
+        all_floats = all(isinstance(c, float) for c in numerator + denominator)
+        correct_num = any(coef != 0 for coef in numerator)
+        correct_den = any(coef != 0 for coef in denominator)
+        if not correct_num or not correct_den or not all_floats:
+            self.error_label.setText("Wrong transfer function")
+            self.error_label.setStyleSheet("color: red")
+            return False
+        
+        order_num, order_den = self.tf_object.get_system_order()
+        if order_num>order_den:
+            self.error_label.setText("Wrong transfer function")
+            self.error_label.setStyleSheet("color: red")
+            return False
 
-    def update_coefficient(self, line_edit, attr_name):
-        value = line_edit.text()
-        try: 
-            self.tf_object.update_coefficients(attr_name, value)
-            self.transfer_error_label.setText("")
-
-        except ValueError as e:
-            #bad coeff corrected - given 1.0
-            value = 1.0
-            self.tf_object.update_coefficients(attr_name, value)
-            line_edit.setText("1.0")
-            self.transfer_error_label.setText(str(e))
-
-    def update_input(self, line_edit, attr_name):
-        value = line_edit.text()
         try:
-            self.input_function.update_input_function(attr_name, value)
-            self.signal_error_label.setText("")
-            self.signal_valid = True
+            if self.selected_signal in ["sine", "square"]:
+                freq = float(self.sine_freq_input.text() if self.selected_signal == "sine" else self.square_freq_input.text())
+                amp = float(self.sine_amp_input.text() if self.selected_signal == "sine" else self.square_amp_input.text())
+                phase = float(self.sine_phase_input.text() if self.selected_signal == "sine" else self.square_phase_input.text())
+                if freq <= 0:
+                    raise ValueError("Frequency must be positive.")
+                if amp <= 0:
+                    raise ValueError("Amplitude must be positive.")
+                if not (-np.pi <= phase <= np.pi):
+                    raise ValueError("Phase must be in [-π, π].")
+                self.input_function.amplitude = amp
+                self.input_function.frequency = freq
+                self.input_function.phase = phase
+                
+            elif self.selected_signal == "sawtooth":
+                freq = float(self.sawtooth_freq_input.text())
+                amp = float(self.sawtooth_amp_input.text())
+                if freq <= 0:
+                    raise ValueError("Frequency must be positive.")
+                if amp <= 0:
+                    raise ValueError("Amplitude must be positive.")
+                self.input_function.amplitude = amp
+                self.input_function.frequency = freq
+
+            elif self.selected_signal == "rectangle impulse":
+                amp = float(self.rec_imp_amp_input.text())
+                width = float(self.rec_imp_width_input.text())
+                if amp <= 0:
+                    raise ValueError("Amplitude must be positive.")
+                if width <= 0:
+                    raise ValueError("Pulse width must be positive.")
+                self.input_function.amplitude = amp
+                self.input_function.pulse_width = width
+
+            elif self.selected_signal == "triangle":
+                freq = float(self.triangle_freq_input.text())
+                amp = float(self.triangle_amp_input.text())
+                if freq <= 0:
+                    raise ValueError("Frequency must be positive.")
+                if amp <= 0:
+                    raise ValueError("Amplitude must be positive.")
+                self.input_function.amplitude = amp
+                self.input_function.frequency = freq
+
+            elif self.selected_signal in ["impulse", "step"]:
+                amp = float(self.impulse_amp_input.text() if self.selected_signal == "impulse" else self.step_amp_input.text())
+                if amp <= 0:
+                    raise ValueError("Amplitude must be positive.")
+                self.input_function.amplitude = amp
 
         except ValueError as e:
-            self.signal_error_label.setText(str(e))
-            self.signal_valid = False
-        self.update_simulate_button_state()
+            self.error_label.setText(str(e))
+            self.error_label.setStyleSheet("color: red")
+            return False
+
+        self.error_label.setText("Correct parameters")  
+        self.error_label.setStyleSheet("color: green")
+        return True
+    
+    def check_transfer_values(self):
+        try:
+            inputs = {
+                self.numerator_a3_input: "a3",
+                self.numerator_a2_input: "a2",
+                self.numerator_a1_input: "a1",
+                self.numerator_a0_input: "a0",
+                self.denominator_b4_input: "b4",
+                self.denominator_b3_input: "b3",
+                self.denominator_b2_input: "b2",
+                self.denominator_b1_input: "b1",
+                self.denominator_b0_input: "b0"
+            }
+
+            for input_field, coeff_name in inputs.items():
+                text = input_field.text()
+                value = float(text) 
+                setattr(self.tf_object, coeff_name, value)
+            return True  
+
+        except ValueError:
+            return False  
+
+    def check_and_simulate(self):
+        if self.check_input_values():
+            self.simulation()
     
     def update_selected_signal(self):
         if self.sine_button.isChecked():
@@ -90,15 +168,6 @@ class Window(QMainWindow):
             self.selected_signal = "step"
             self.input_function = InputFunction("step", 
                                             float(self.step_amp_input.text()))
-        self.update_simulate_button_state()
-
-    def _labeled_input(self, label_text, widget):
-        layout = QHBoxLayout()
-        layout.setAlignment(Qt.AlignLeft)
-        layout.addWidget(QLabel(label_text))
-        layout.addWidget(widget)
-        layout.addStretch()
-        return layout
     
     def update_signal_param_visibility(self):
         self.sine_params.setVisible(self.sine_button.isChecked())
@@ -108,6 +177,14 @@ class Window(QMainWindow):
         self.triangle_params.setVisible(self.triangle_button.isChecked())
         self.impulse_params.setVisible(self.impulse_button.isChecked())
         self.step_params.setVisible(self.step_button.isChecked())
+
+    def _labeled_input(self, label_text, widget):
+        layout = QHBoxLayout()
+        layout.setAlignment(Qt.AlignLeft)
+        layout.addWidget(QLabel(label_text))
+        layout.addWidget(widget)
+        layout.addStretch()
+        return layout
 
     def create_latex_canvas(self, expr):
         fig, ax = plt.subplots(figsize=(6, 2), dpi=100)
@@ -156,46 +233,34 @@ class Window(QMainWindow):
        self.simulate_button = QPushButton("Simulate")
        back_b = QPushButton("Back to start")
 
-       self.simulate_button.clicked.connect(self.simulation)
+       self.error_label = QLabel("")
+       self.error_label.setAlignment(Qt.AlignLeft)
+
+       self.set_parameters_button.clicked.connect(self.check_input_values)
+       self.simulate_button.clicked.connect(self.check_and_simulate)
        back_b.clicked.connect(self.start_menu)
 
        menu_view.addWidget(QLabel("<h3>Transfer function</h3>"))
        menu_view.addWidget(QLabel("Numerator of G :"))
-       self.numerator_a3_input.setFixedWidth(80)
-       self.numerator_a3_input.editingFinished.connect(lambda: self.update_coefficient(self.numerator_a3_input, "a3"))
+       self.numerator_a3_input.setFixedWidth(80) 
        menu_view.addLayout(self._labeled_input("a3:", self.numerator_a3_input))
-
        self.numerator_a2_input.setFixedWidth(80)
-       self.numerator_a2_input.editingFinished.connect(lambda: self.update_coefficient(self.numerator_a2_input, "a2"))
        menu_view.addLayout(self._labeled_input("a2:", self.numerator_a2_input))
-
        self.numerator_a1_input.setFixedWidth(80)
-       self.numerator_a1_input.editingFinished.connect(lambda: self.update_coefficient(self.numerator_a1_input, "a1"))
        menu_view.addLayout(self._labeled_input("a1:", self.numerator_a1_input))
-
        self.numerator_a0_input.setFixedWidth(80)
-       self.numerator_a0_input.editingFinished.connect(lambda: self.update_coefficient(self.numerator_a0_input, "a0"))
        menu_view.addLayout(self._labeled_input("a0:", self.numerator_a0_input))
 
        menu_view.addWidget(QLabel("Denominator of G :"))
        self.denominator_b4_input.setFixedWidth(80)
-       self.denominator_b4_input.editingFinished.connect(lambda: self.update_coefficient(self.denominator_b4_input, "b4"))
        menu_view.addLayout(self._labeled_input("b4:", self.denominator_b4_input))
-
        self.denominator_b3_input.setFixedWidth(80)
-       self.denominator_b3_input.editingFinished.connect(lambda: self.update_coefficient(self.denominator_b3_input, "b3"))
        menu_view.addLayout(self._labeled_input("b3:", self.denominator_b3_input))
-
        self.denominator_b2_input.setFixedWidth(80)
-       self.denominator_b2_input.editingFinished.connect(lambda: self.update_coefficient(self.denominator_b2_input, "b2"))
        menu_view.addLayout(self._labeled_input("b2:", self.denominator_b2_input))
-
        self.denominator_b1_input.setFixedWidth(80)
-       self.denominator_b1_input.editingFinished.connect(lambda: self.update_coefficient(self.denominator_b1_input, "b1"))
        menu_view.addLayout(self._labeled_input("b1:", self.denominator_b1_input))
-
        self.denominator_b0_input.setFixedWidth(80)
-       self.denominator_b0_input.editingFinished.connect(lambda: self.update_coefficient(self.denominator_b0_input, "b0"))
        menu_view.addLayout(self._labeled_input("b0:", self.denominator_b0_input))
 
        menu_view.addWidget(QLabel("<h3>Input signal</h3>"))
@@ -210,7 +275,6 @@ class Window(QMainWindow):
        self.impulse_button = QRadioButton("Impulse")
        self.step_button = QRadioButton("Step")
       
-
        if self.selected_signal == "sine": 
             self.sine_button.setChecked(True)
        elif self.selected_signal == "square":
@@ -232,7 +296,7 @@ class Window(QMainWindow):
        self.triangle_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
        self.impulse_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
        self.step_button.toggled.connect(lambda: (self.update_selected_signal(), self.update_signal_param_visibility()))
-
+    
        #Sine parameters
        self.sine_params = QWidget()
        sine_layout = QVBoxLayout()
@@ -242,9 +306,6 @@ class Window(QMainWindow):
        for w in [self.sine_freq_input, self.sine_amp_input, self.sine_phase_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
-       self.sine_freq_input.editingFinished.connect(lambda: self.update_input(self.sine_freq_input, "frequency"))
-       self.sine_amp_input.editingFinished.connect(lambda: self.update_input(self.sine_amp_input, "amplitude"))
-       self.sine_phase_input.editingFinished.connect(lambda: self.update_input(self.sine_phase_input, "phase"))
        sine_layout.addLayout(self._labeled_input("Frequency [Hz]:", self.sine_freq_input))
        sine_layout.addLayout(self._labeled_input("Amplitude [V]:", self.sine_amp_input))
        sine_layout.addLayout(self._labeled_input("Phase [rad]:", self.sine_phase_input))
@@ -259,9 +320,6 @@ class Window(QMainWindow):
        for w in [self.square_freq_input, self.square_amp_input, self.square_phase_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
-       self.square_freq_input.editingFinished.connect(lambda: self.update_input(self.square_freq_input, "frequency"))
-       self.square_amp_input.editingFinished.connect(lambda: self.update_input(self.square_amp_input, "amplitude"))
-       self.square_phase_input.editingFinished.connect(lambda: self.update_input(self.square_phase_input, "phase"))
        square_layout.addLayout(self._labeled_input("Frequency [Hz]:", self.square_freq_input))
        square_layout.addLayout(self._labeled_input("Amplitude [V]:", self.square_amp_input))
        square_layout.addLayout(self._labeled_input("Phase [rad]:", self.square_phase_input))
@@ -275,8 +333,6 @@ class Window(QMainWindow):
        for w in [self.sawtooth_freq_input, self.sawtooth_amp_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
-       self.sawtooth_freq_input.editingFinished.connect(lambda: self.update_input(self.sawtooth_freq_input, "frequency"))
-       self.sawtooth_amp_input.editingFinished.connect(lambda: self.update_input(self.sawtooth_amp_input, "amplitude"))
        sawtooth_layout.addLayout(self._labeled_input("Frequency [Hz]:", self.sawtooth_freq_input))
        sawtooth_layout.addLayout(self._labeled_input("Amplitude [V]:", self.sawtooth_amp_input))
        self.sawtooth_params.setLayout(sawtooth_layout)
@@ -289,8 +345,6 @@ class Window(QMainWindow):
        for w in [self.rec_imp_amp_input, self.rec_imp_width_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
-       self.rec_imp_amp_input.editingFinished.connect(lambda: self.update_input(self.rec_imp_amp_input, "amplitude"))
-       self.rec_imp_width_input.editingFinished.connect(lambda: self.update_input(self.rec_imp_width_input, "pulse_width"))
        rec_imp_layout.addLayout(self._labeled_input("Amplitude [V]:", self.rec_imp_amp_input))
        rec_imp_layout.addLayout(self._labeled_input("Pulse width [s]:", self.rec_imp_width_input))
        self.rec_imp_params.setLayout(rec_imp_layout)
@@ -303,8 +357,6 @@ class Window(QMainWindow):
        for w in [self.triangle_freq_input, self.triangle_amp_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
-       self.triangle_freq_input.editingFinished.connect(lambda: self.update_input(self.triangle_freq_input, "frequency"))
-       self.triangle_amp_input.editingFinished.connect(lambda: self.update_input(self.triangle_amp_input, "amplitude"))
        triangle_layout.addLayout(self._labeled_input("Frequency [Hz]:", self.triangle_freq_input))
        triangle_layout.addLayout(self._labeled_input("Amplitude [V]:", self.triangle_amp_input))
        self.triangle_params.setLayout(triangle_layout)
@@ -316,7 +368,6 @@ class Window(QMainWindow):
        for w in [self.impulse_amp_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
-       self.impulse_amp_input.editingFinished.connect(lambda: self.update_input(self.impulse_amp_input, "amplitude"))
        impulse_layout.addLayout(self._labeled_input("Amplitude [V]:", self.impulse_amp_input))
        self.impulse_params.setLayout(impulse_layout)
 
@@ -327,7 +378,6 @@ class Window(QMainWindow):
        for w in [self.step_amp_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
-       self.step_amp_input.editingFinished.connect(lambda: self.update_input(self.step_amp_input, "amplitude"))
        step_layout.addLayout(self._labeled_input("Amplitude [V]:", self.step_amp_input))
        self.step_params.setLayout(step_layout)
 
@@ -361,12 +411,7 @@ class Window(QMainWindow):
        menu_widget.setLayout(menu_view)
        self.setCentralWidget(menu_widget)
 
-       self.signal_error_label = QLabel("")
-       self.signal_error_label.setStyleSheet("color: red")
-       self.transfer_error_label = QLabel("")
-       self.transfer_error_label.setStyleSheet("color: red")
-       menu_view.addWidget(self.transfer_error_label)
-       menu_view.addWidget(self.signal_error_label)
+       menu_view.addWidget(self.error_label)
 
 
     def simulation(self):
@@ -381,32 +426,20 @@ class Window(QMainWindow):
         simulation_widget.setLayout(simulation_view)
         self.setCentralWidget(simulation_widget)
 
-        try:
-            self.bode = BodePlot(self.tf_object)
-            simulation_view.addWidget(self.bode.canvas)
+        self.bode = BodePlot(self.tf_object)
+        simulation_view.addWidget(self.bode.canvas)
 
-            stability = QLabel(f"Stable system: {self.bode.stable}")
-            stability.setAlignment(Qt.AlignCenter) 
-            simulation_view.addWidget(stability)
-        
-        except ValueError as e:
-            error_label = QLabel(f"Error: {e}")
-            error_label.setStyleSheet("color: red")
-            simulation_view.addWidget(error_label)
+        stability = QLabel(f"Stable system: {self.bode.stable}")
+        stability.setAlignment(Qt.AlignCenter) 
+        simulation_view.addWidget(stability)
 
         canvas = self.create_latex_canvas(self.tf_object.get_symbolic_tf())
         simulation_view.addWidget(canvas)
 
         self.output = OutputCompute(self.selected_signal, self.tf_object, self.input_function)
 
-        order_num, order_den = self.output.get_system_order()
         simulation_view.addWidget(self.input_function.input_plot())
-        if order_num<=order_den:
-            simulation_view.addWidget(self.output.output_plot())
-        else:
-            error_label = QLabel(f"Wrong transfer function")
-            error_label.setStyleSheet("color: red")
-            simulation_view.addWidget(error_label)
+        simulation_view.addWidget(self.output.output_plot())
         simulation_view.addWidget(back_b)
           
 #run

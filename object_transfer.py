@@ -18,23 +18,18 @@ class ObjectTransfer:
       denominator = [self.b4, self.b3, self.b2, self.b1, self.b0]
       return numerator, denominator
     
-    def update_coefficients(self, attr_name, value):
-       try:
-            value = float(value)
-       except ValueError:
-            raise ValueError(f"{attr_name.capitalize()} was not a number.")
-       setattr(self, attr_name, value)
-        
-    def correct_values(self):
-      numerator, denominator = self.get_tf_coefficients()
-      all_floats = all(isinstance(c, float) for c in numerator + denominator)
-      correct_num = any(coef != 0 for coef in numerator)
-      correct_den = any(coef != 0 for coef in denominator)
-      return correct_num and correct_den and all_floats
+    def get_system_order(self):
+        num, den = self.get_tf_coefficients()
+        def first_nonzero_index(coeffs):
+            for i, c in enumerate(coeffs):
+                if c != 0:
+                    return i
+            return len(coeffs)  # all zeros
+        num_order = len(num) - first_nonzero_index(num) - 1
+        den_order = len(den) - first_nonzero_index(den) - 1
+        return num_order, den_order
     
     def get_tf(self):
-        if not self.correct_values():
-            raise ValueError("Incorrect transfer function")
         num, den = self.get_tf_coefficients()
         return TransferFunction(num, den)
     

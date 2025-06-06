@@ -17,16 +17,6 @@ class OutputCompute:
         self.phase = self.input_info.phase
         self.pulse_width = self.input_info.pulse_width
 
-    def get_system_order(self):
-        def first_nonzero_index(coeffs):
-            for i, c in enumerate(coeffs):
-                if c != 0:
-                    return i
-            return len(coeffs)  # all zeros
-        num_order = len(self.num) - first_nonzero_index(self.num) - 1
-        den_order = len(self.den) - first_nonzero_index(self.den) - 1
-        return num_order, den_order
-
     def get_manual_input_value(self, t):
         if self.input_type == "sine":
             return self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
@@ -44,8 +34,9 @@ class OutputCompute:
             return self.amplitude * (1 - 4 * np.abs(t_mod / T - 0.5))
         elif self.input_type == "impulse":
             u = np.zeros_like(t)
+            dt = t[1] - t[0]
             idx = np.argmin(np.abs(t - 0.01))
-            u[idx] = self.amplitude
+            u[idx] = self.amplitude / dt  # poprawna aproksymacja Diraca
             return u
         elif self.input_type == "step":
             return self.amplitude * np.ones_like(t)
@@ -75,7 +66,7 @@ class OutputCompute:
 
         a0, a1, a2, a3, = u_coeffs
         b0, b1, b2, b3, b4 = y_coeffs
-        _, n_den = self.get_system_order()
+        _, n_den = self.object_info.get_system_order()
 
         u, du1, du2, du3 = self.get_manual_input_derivatives(t)
         N = len(t)
