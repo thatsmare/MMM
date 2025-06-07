@@ -40,8 +40,9 @@ class InputFunction:
         elif self.signal_type == "impulse":
             t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)
             y = np.zeros_like(t)
+            dt = t[1] - t[0]
             idx = np.argmin(np.abs(t - 0.01))
-            y[idx] = self.amplitude
+            y[idx] = self.amplitude / dt  
             return t, y
         elif self.signal_type == "step":
             t = np.linspace(0, self.duration, int(self.duration * self.sample_rate), endpoint=False)

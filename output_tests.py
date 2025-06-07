@@ -1,17 +1,16 @@
 import numpy as np
-from scipy.signal import square, sawtooth
 import matplotlib.pyplot as plt
 
 class TransferFunctionSimulator:
     def __init__(self):
-        self.a3, self.a2, self.a1, self.a0 = 0, 8, 3, 1  
-        self.b4, self.b3, self.b2, self.b1, self.b0 = 0, 5, 4, 3, 2  
-        self.input_type = "sine"
+        self.a3, self.a2, self.a1, self.a0 = 0, 0, 0, 1  
+        self.b4, self.b3, self.b2, self.b1, self.b0 = 0, 0, 4, 3, 2  
+        self.input_type = "impulse"
         self.amplitude = 2
         self.frequency = 1
         self.phase = 0
         self.pulse_width = 1                         #HERE CHANGE PARAMETERS
-        self.dt = 0.01
+        self.dt = 0.001
 
     def get_tf(self):
         numerator = [self.a3, self.a2, self.a1, self.a0]
@@ -33,15 +32,22 @@ class TransferFunctionSimulator:
         if self.input_type == "sine":
             return self.amplitude * np.sin(2 * np.pi * self.frequency * t + self.phase)
         elif self.input_type == "sawtooth":
-            return self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase)
+            T = 1/ self.frequency
+            return (2 * self.amplitude / T) * (t % T) - self.amplitude
         elif self.input_type == "square":
-            return self.amplitude * square(2 * np.pi * self.frequency * t + self.phase)
+            temp=np.sin(2 * np.pi * self.frequency * t + self.phase)
+            return self.amplitude * np.where(temp >= 0, 1, -1)
         elif self.input_type == "rectangle impulse":
             return self.amplitude * np.where((t>0) & (t<self.pulse_width), 1, 0)
         elif self.input_type == "triangle":
-            return self.amplitude * sawtooth(2 * np.pi * self.frequency * t + self.phase, width=0.5)
+            T = 1/ self.frequency
+            t_mod = np.mod(t,T)
+            return self.amplitude * (1 - 4 * np.abs(t_mod / T - 0.5))
         elif self.input_type == "impulse":
-            return self.amplitude if abs(t - 0.01) < self.dt / 2 else 0
+            if isinstance(t, np.ndarray):
+                return self.amplitude * ((np.abs(t - 0.01) < self.dt / 2).astype(float))
+            else:
+                return self.amplitude if abs(t - 0.01) < self.dt / 2 else 0
         elif self.input_type == "step":
             return self.amplitude * np.ones_like(t)
 
@@ -186,7 +192,7 @@ class TransferFunctionSimulator:
     def simulate_system(self, t_start, t_end):
         dt=self.dt
         t = np.arange(t_start, t_end + dt, dt) 
-        u, _, _, _ = self.get_manual_input_derivatives(t)  
+        u = self.get_manual_input_value(t)  
         y = self.euler_output(t)  
         return t, u, y
     

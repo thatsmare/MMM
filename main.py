@@ -368,7 +368,7 @@ class Window(QMainWindow):
        for w in [self.impulse_amp_input]:
            w.setFixedWidth(80)
            w.setAlignment(Qt.AlignLeft)
-       impulse_layout.addLayout(self._labeled_input("Amplitude [V]:", self.impulse_amp_input))
+       impulse_layout.addLayout(self._labeled_input("Energy:", self.impulse_amp_input))
        self.impulse_params.setLayout(impulse_layout)
 
        #Step parameters
@@ -437,6 +437,7 @@ class Window(QMainWindow):
         simulation_view.addWidget(canvas)
 
         self.output = OutputCompute(self.selected_signal, self.tf_object, self.input_function)
+        self.tf_object.plot_zeros_poles()
 
         simulation_view.addWidget(self.input_function.input_plot())
         simulation_view.addWidget(self.output.output_plot())
