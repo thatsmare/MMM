@@ -173,15 +173,18 @@ Analogicznie wyznaczamy najwyższą pochodną oraz pozostałe pochodne wyjścia 
 
   \vspace{0.2cm}
   
-  \item \textbf{Określenie stabilności układu.} \par\vspace{0.1cm}
-  Analiza stabilności na podstawie charakterystyk oraz odpowiedzi czasowych.
-
-
-
+  \item \textbf{Wyznaczenie charakterystyk Bodego.} \par\vspace{0.1cm}
+    Za narysowanie charakterystyki amplitudowej i fazowej oraz za określenie stabilności
+    odpowiedzialna jest klasa {\texttt{bode\_plot}}. Inicjalizacja klasy pobiera potrzebne dane
+    oraz przygotowuje zakres kreślonego wykresu. W funkcji \textcolor{blue}{\texttt{plotting\_bode}} obliczne są charakterystyki falowe i amplitudowe
+    układu. Dodatkowo, określana jest stabilność na podstawie zapasów fazy i wzmocnienia.
   \vspace{0.2cm}
 
-  \item \textbf{Wyznaczenie charakterystyk Bodego.} \par\vspace{0.1cm}
-  Narysowanie charakterystyki amplitudowej i fazowej.
+  \item \textbf{Określenie stabilności układu.} \par\vspace{0.1cm}
+  Stabilność układu określana jest w funkcji \textcolor{blue}{\texttt{plotting\_bode}}.
+  Układy stabilne charakteryzują się brakiem biegunów dodatnich oraz dodatnimi zapasami fazy i wzmocnienia.
+  Zapas fazy oblicza się, kiedy wykres wzmocnienia przechodzi do ujemnych wartości. Natomiast, zapas wzmocnienia określany jest, gdy wykres przecina wartość $-180^{\circ}$.
+  Jeżeli taki punkt nie występuje, zapas wzmocnienia przyrównywany jest do $\infty$.
 \end{enumerate}
 
 %---------------------------------------------------------------------------------------------------------------------------
