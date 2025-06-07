@@ -176,7 +176,7 @@ Analogicznie wyznaczamy najwyższą pochodną oraz pozostałe pochodne wyjścia 
   \item \textbf{Wyznaczenie charakterystyk Bodego.} \par\vspace{0.1cm}
     Za narysowanie charakterystyki amplitudowej i fazowej oraz za określenie stabilności
     odpowiedzialna jest klasa {\texttt{bode\_plot}}. Inicjalizacja klasy pobiera potrzebne dane
-    oraz przygotowuje zakres kreślonego wykresu. W funkcji \textcolor{blue}{\texttt{plotting\_bode}} obliczne są charakterystyki falowe i amplitudowe
+    oraz przygotowuje zakres kreślonego wykresu. W funkcji \textcolor{blue}{\texttt{plotting\_bode}} obliczne są charakterystyki fazowe i amplitudowe
     układu. Dodatkowo, określana jest stabilność na podstawie zapasów fazy i wzmocnienia.
   \vspace{0.2cm}
 
@@ -184,7 +184,8 @@ Analogicznie wyznaczamy najwyższą pochodną oraz pozostałe pochodne wyjścia 
   Stabilność układu określana jest w funkcji \textcolor{blue}{\texttt{plotting\_bode}}.
   Układy stabilne charakteryzują się brakiem biegunów dodatnich oraz dodatnimi zapasami fazy i wzmocnienia.
   Zapas fazy oblicza się, kiedy wykres wzmocnienia przechodzi do ujemnych wartości. Natomiast, zapas wzmocnienia określany jest, gdy wykres przecina wartość $-180^{\circ}$.
-  Jeżeli taki punkt nie występuje, zapas wzmocnienia przyrównywany jest do $\infty$.
+  Jeżeli taki punkt nie występuje, zapas wzmocnienia przyrównywany jest do $\infty$. Dodatkowo dodano funkcję \textcolor{blue}{\texttt{plot\_zeros\_poles}}, która odpowada za 
+  rysowanie zer i biegunów układu na płaszyźnie zespolonej.
 \end{enumerate}
 
 %---------------------------------------------------------------------------------------------------------------------------
@@ -199,7 +200,9 @@ parametrów symulacyjnych i zmianę parametrów w stosunku do symulacji pokazane
 \vspace{0.5cm}
 
 1. Metoda Eulera jest metodą dość prostą w implementacji i bardzo elastyczną w modyfikowaniu dla dowolnego rzędu układu. 
-Działanie jest prawidłowe pod warunkiem dobrania odpowiedniego kroku czasowego --- w naszej symulacji dobrany został krok 0.01s. 
+Działanie jest prawidłowe pod warunkiem dobrania odpowiedniego kroku czasowego --- w naszej symulacji dobrany został krok 0.01s, który pozwala na dość
+szybkie uzyskanie odpowiedzi programu, a zarazem dość optymalną dokładość wykreślania sygnału wyjściowego. Im wyższy rząd układu, tym mniejsza dokładność wyznaczania odpowiedzi
+w porównaniu z metodą różniczkowania Runnego-Kutty, która nie jest częścią głównego projektu, ale została zaimplementowana w pliku testowym dla porównania odpowiedzi.
 
 \vspace{0.5cm}
 
@@ -208,12 +211,20 @@ o różnych rzędach --- od zerowego do czwartego.
 
 \vspace{0.5cm}
 
-3. Coś o metodzie RK4 jeśli jednak zostanie dołączona z output tests (porównanie etc)
+3. Charakterystyki Bodego są wygodnym narzędziem, za pomocą którego można wyznaczać stabilność układu poprzez wyznaczenie zapasu amplitudy i fazy
+bezpośrednio z punktów charakterystycznych na wykresach --- punktu przejścia wykresu amplitudy przez wartość 0dB oraz punktu przecięcia wykresu fazy z $-180^{\circ}$.
+
+\vspace{0.5cm}
+
+4. Znajomość transmitancji układu pozwala na określenie jego stabilności i przewidywanie jego reakcji na różne pobudzenia. Postać transmitancyjna jest
+tak powszechnie stosowana w automatyce i modelowaniu układów ze względu na swoją funkcjonalność i uniwersalność. 
 
 \vspace{0.5cm}
 
 Projekt spełnił wszystkie założone wymagania. Symulator jest dobrym narzędziem do testowania odpowiedzi różnych układów do 4 rzędu 
-i można dość łatwo rozbudowywać go dodając inne pobudzenia, czy zwiększając rząd układu. 
+i można dość łatwo rozbudowywać go dodając inne pobudzenia, czy zwiększając rząd układu. Projekt stanowi praktyczne podsumowanie wiedzy
+z zakresu modelowania układów dynamicznych, wyznaczania ich odpowiedzi, określania stabilności za pomocą charakterystyk Bodego oraz
+stosowania metod numerycznych w rozwiązywaniu problemów w automatyce. 
 
 
 \end{document}
