@@ -1,138 +1,216 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% University/School Laboratory Report
-% LaTeX Template
-% Version 4.0 (March 21, 2022)
-%
-% This template originates from:
-% https://www.LaTeXTemplates.com
-%
-% Authors:
-% Vel (vel@latextemplates.com)
-% Linux and Unix Users Group at Virginia Tech Wiki
-%
-% License:
-% CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[10pt, a4paper]{article}
 
-%----------------------------------------------------------------------------------------
-%	PACKAGES AND DOCUMENT CONFIGURATIONS
-%----------------------------------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{geometry}
+\geometry{
+  top=2cm,
+  bottom=2cm,
+  left=1.5cm,
+  right=1.5cm
+}
 
-\documentclass[
-	letterpaper, % Paper size, specify a4paper (A4) or letterpaper (US letter)
-	10pt, % Default font size, specify 10pt, 11pt or 12pt
-]{CSUniSchoolLabReport}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{biblatex} 
+\addbibresource{sample.bib} 
 
-\addbibresource{sample.bib} % Bibliography file (located in the same folder as the template)
+\usepackage{lmodern} 
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{sectsty} 
+\allsectionsfont{\sffamily}
 
-%----------------------------------------------------------------------------------------
-%	REPORT INFORMATION
-%----------------------------------------------------------------------------------------
+\title{
+  \textbf{Projekt z Metod Modelowania Matematycznego 2025} \\
+  \large Zadanie 10: Implementacja symulatora układu danego za pomocą transmitancji
+}
 
-\title{Projekt z Metod Modelowania Matematycznego 2025 \\ Zadanie 10 \\ Działania na transmitancji układu, Charakterystyki Bodego} % Report title
+\author{
+  Natalia \textsc{Sampławska 197573} \\
+  Martyna \textsc{Penkowska 197926}
+}
 
-\author{Natalia \textsc{Sampławska 197573} \& Martyna \textsc{Penkowska 197926}} % Author name(s), add additional authors like: '\& James \textsc{Smith}'
+\date{\today}
 
-\date{\today} % Date of the report
-
-%----------------------------------------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Modelowanie Matematyczne}
+\rhead{\thepage}
 
 \begin{document}
 
-\maketitle % Insert the title, author and date using the information specified above
+\maketitle
 
 \begin{center}
-	\begin{tabular}{l r}
-		Okres trwania projektu: & Semestr letni roku akademickiego 2025 \\ % Date the experiment was performed
-		Prowadzący projekt: & dr. inż \textsc{Marek Tatara} % Instructor/supervisor
-	\end{tabular}
+  \begin{tabular}{l r}
+    Okres trwania projektu: & Semestr letni roku akademickiego 2025 \\
+    Prowadzący projekt: & dr inż. \textsc{Marek Tatara}
+  \end{tabular}
 \end{center}
 
-% If you need to include an abstract, uncomment the lines below
-%\begin{abstract}
-%	Abstract text
-%\end{abstract}
+\vspace{0.1cm}
 
-%----------------------------------------------------------------------------------------
-%	OBJECTIVE
-%----------------------------------------------------------------------------------------
+%--------------------------------------------------------------------------------------------------------------------------------------
 
 \section{Cel}
 
-Implementacja symulatora umożliwiającego wykreślenie charakterystyk Bodego oraz określenia stabilności na podstawie transmitancji:
+Implementacja symulatora układu danego za pomocą transmitancji: 
 
-\begin{center}
-	\ {G(s) = } % Chemical equations entered in \ce{} commands, see the mhchem package documentation for more information
-\end{center}
+\[
+G(s) = \frac{a_3 s^3 + a_2 s^2 + a_1 s + a_0}{b_4 s^4 + b_3 s^3 + b_2 s^2 + b_1 s + b_0}
+\]
 
-% If you have more than one objective, uncomment the below:
-%\begin{description}
-%	\item[First Objective] \hfill \\
-%	Objective 1 text
-%	\item[Second Objective] \hfill \\
-%	Objective 2 text
-%\end{description}
+gdzie \( a_i \) oraz \( b_i \) to zmienne parametry modelu, umożliwiającego uzyskanie odpowiedzi czasowych układu na pobudzenia sygnałami: sinusoidalnym, prostokątnym,
+piłokształtnym, trójkątnym, impulsem prostokątnym, impulsem jednostkowym i skokiem jednosktkowym. Parametry sygnałów można odpowiednio ustawiać w oknie symulacji. Symulator 
+umożliwia określenie stabilności układu oraz wykreślanie charakterystyk częstotliwościowych Bodego - amplitudowej i fazowej. 
 
-%\subsection{Definitions}\label{definitions} % Labels provide a point for referencing, in this case with \ref{definitions} to refer to this subsection number
-
-%\begin{description}
-%	\item[Stoichiometry] The relationship between the relative quantities of substances taking part in a reaction or forming a compound, typically a ratio of whole integers.
-%	\item[Atomic mass] The mass of an atom of a chemical element expressed in atomic mass units. It is approximately equivalent to the number of protons and neutrons in the atom (the mass number) or to the average number allowing for the relative abundances of different isotopes. 
-%\end{description} 
- 
-%----------------------------------------------------------------------------------------
-%	EXPERIMENTAL DATA
-%----------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------------------------------------------------------------
 
 \section{Zaimplementowane funkcje symulatora}
 
 \begin{tabular}{l l}
-	1. & Wybór parametrów obiektu\\ % Scientific/technical units are output using the \SI command, see the siunitx package documentation for more information on how to use this command
+	1. & Wybór parametrów obiektu\\ 
 	2. & Wybór sygnału wejściowego wraz z wszystkimi jego parametrami\\
 	3. & Generowanie charakterystyk Bodego\\
 	4. & Implementacja różniczkowania\\
-	5. & Obliczanie sygnału wyjściowego\\
-	6. & Przedstawienie graficzne\\
+	5. & Przedstawienie graficzne sygnału wejściowego i wyjściowego\\
+  6. & Określenie stabilności układu \\
 \end{tabular}
 
-
-%----------------------------------------------------------------------------------------
-%	RESULTS AND CONCLUSIONS
-%----------------------------------------------------------------------------------------
+%------------------------------------------------------------------------------------------------------------------------------------------
 
 \section{Opis funkcji}
 
-The atomic weight of magnesium is concluded to be \SI{24}{\gram\per\mol}, as determined by the stoichiometry of its chemical combination with oxygen. This result is in agreement with the accepted value.
+\begin{enumerate}[label=\alph*.]
+  \item \textbf{Wybór parametrów obiektu i sygnału wejściowego.} \par\vspace{0.1cm}
+  Z poziomu interfejsu można zmienić wszystkie parametry układu – współczynniki transmitancji oraz wybrany sygnał pobudzający wraz z wartościami, które go charakteryzują 
+  (amplitudą, częstotliwością, fazą, szerokością impulsu). 
 
-\begin{figure}[H] % [H] forces the figure to be placed exactly where it appears in the text
-	\centering % Horizontally center the figure
-	\includegraphics[width=0.65\textwidth]{placeholder} % Include the figure
-	\caption{Figure caption.}
-\end{figure}
+  \vspace{0.1cm}
 
-%----------------------------------------------------------------------------------------
-%	DISCUSSION
-%----------------------------------------------------------------------------------------
+  \textcolor{blue}{\texttt{check\_input\_values}} --- funkcja sprawdzająca poprawność wprowadzonych danych. Sprawdzenie czy wszystkie współczynniki licznika i mianownika
+  są liczbami, czy licznik lub mianownik nie są zerowe, czy rząd licznika nie jest wyższy niż rząd mianownika oraz czy parametry sygnału wejściowego są poprawne: amplituda, 
+  częstotliwość i szerokość impulsu większe od zera, faza z zakresu od $-\pi$ do $\pi$. W przypadku błędnych danych funkcja generuje flagę błędu wyświetlającą się w 
+  oknie main view. Gdy dane są poprawne wyświetla się komunikat "Correct parameters". Wywołanie funkcji występuje po naciśnięciu przycisku set parameters oraz przed wykonaniem
+  symulacji układu.
 
-\section{Wnioski}
+  \vspace{0.1cm}
 
-The accepted value (periodic table) is \SI{24.3}{\gram\per\mole} \autocite{Smith:2022qr}. The percentage discrepancy between the accepted value and the result obtained here is 1.3\%. Because only a single measurement was made, it is not possible to calculate an estimated standard deviation (see \textcite{Smith:2021jd}).
+  \textcolor{blue}{\texttt{update\_selected\_signal}}, \textcolor{blue}{\texttt{update\_signal\_param\_visibility}} --- funkcje aktualizujące dane sygnału wejściowego. 
+  Wybór pobudzenia jest zrealizowany za pomocą radiobuttonów. Po naciśnięciu odpowiedniego przycisku wyświetlają się pod nim parametry danego sygnału, których wartości
+  można wprowadzać z klawiatury
 
-The most obvious source of experimental uncertainty is the limited precision of the balance. Other potential sources of experimental uncertainty are: the reaction might not be complete; if not enough time was allowed for total oxidation, less than complete oxidation of the magnesium might have, in part, reacted with nitrogen in the air (incorrect reaction); the magnesium oxide might have absorbed water from the air, and thus weigh ``too much." Because the result obtained is close to the accepted value it is possible that some of these experimental uncertainties have fortuitously cancelled one another.
+  \vspace{0.2cm}
+  
+  \item \textbf{Okno programu.} \par\vspace{0.1cm}
+  Interfejs graficzny jest zrealizowany za pomocą biblioteki PyQt5. Po uruchomieniu kodu otwiera się okno startowe \textcolor{blue}{\texttt{start\_menu}}, w którym
+  znajduje się opis założeń projektu. Z niego po naciśnięciu przycisku menu przechodzimy do głównej części programu \textcolor{blue}{\texttt{menu\_display}}. 
+  Z tego poziomu zmieniamy parametry transmitancji i pobudzenia. Naciśnięcie przycisku simulate umożliwia przejście do okna symulacji \textcolor{blue}{\texttt{simulation}}, 
+  w którym wyświetlają się charakterystyki Bodego, ustawiona postać transmitancji oraz wykresy sygnałów wejściowych i wyjściowych.
 
-%----------------------------------------------------------------------------------------
-%	ANSWERS TO DEFINITIONS
-%----------------------------------------------------------------------------------------
+  \vspace{0.2cm}
+  
+  \item \textbf{Pobudzenia wejściowe układu.} \par\vspace{0.1cm}
+  Układ może być pobudzany następującymi sygnałami: 
+  \begin{itemize}
+  \item \textbf{Sinusoidalnym:} \( y(t) = A \sin(2\pi f t + \varphi) \)
+  \item \textbf{Prostokątnym:} \( y(t) = A \cdot \operatorname{sgn}\left( \sin(2\pi f t + \varphi) \right) \)
+  \item \textbf{Piłokształtnym:} \( y(t) = \left( \frac{2A}{T} \right) (t \bmod T) - A \)
+  \item \textbf{Trójkątnym:} \(y(t) = A \left(1 - 4 \left| \frac{t \bmod T}{T} - \frac{1}{2} \right| \right)\)
+  \item \textbf{Impulsem prostokątnym:} \( y(t) = 
+  \begin{cases}
+  A, & \text{dla } 0 < t < pulse width \\
+  0, & \text{w przeciwnym razie}
+  \end{cases}
+  \)
+  \item \textbf{Skokiem jednostkowym:} \( y(t) = A \cdot u(t) \)
+  \item \textbf{Impulsem jednostkowym:} \(y(t) = A \cdot \delta(t)\)
+\end{itemize}
+
+\vspace{0.2cm}
+  
+  \item \textbf{Wyznaczenie wyjścia układu.} \par\vspace{0.1cm}
+  Do wyznaczenia wyjścia wykorzystano różniczkowanie metodą Eulera. 
+
+  \vspace{0.1cm}
+
+  \textcolor{blue}{\texttt{get\_manual\_input\_derivatives}} --- aproksymacja pochodnych sygnału wejściowego 
+  \[
+\begin{aligned}
+\dot{u}[i] &\approx \frac{u[i] - u[i-1]}{\Delta t} \quad &\text{(pierwsza pochodna)} \\
+\ddot{u}[i] &\approx \frac{\dot{u}[i] - \dot{u}[i-1]}{\Delta t} \quad &\text{(druga pochodna)} \\
+\dddot{u}[i] &\approx \frac{\ddot{u}[i] - \ddot{u}[i-1]}{\Delta t} \quad &\text{(trzecia pochodna)}
+\end{aligned}
+\]
+\noindent gdzie \( \Delta t \) to krok czasowy.
+
+\vspace{0.1cm}
+
+\textcolor{blue}{\texttt{euler\_output}} --- wyznaczenie kolejnych pochodnych sygnału wyjściowego za pomocą metody Eulera
+
+{\footnotesize
+\begin{align*}
+y^{(4)}[k] &= \frac{a_3 \cdot u^{(3)}[k] + a_2 \cdot u^{(2)}[k] + a_1 \cdot u^{(1)}[k] + a_0 \cdot u[k] - b_3 \cdot y^{(3)}[k-1] - b_2 \cdot y^{(2)}[k-1] - b_1 \cdot y^{(1)}[k-1] - b_0 \cdot y[k-1]}{b_4} \\
+y^{(3)}[k] &= y^{(3)}[k-1] + \Delta t \cdot y^{(4)}[k] \\
+y^{(2)}[k] &= y^{(2)}[k-1] + \Delta t \cdot y^{(3)}[k] \\
+y^{(1)}[k] &= y^{(1)}[k-1] + \Delta t \cdot y^{(2)}[k] \\
+y[k] &= y[k-1] + \Delta t \cdot y^{(1)}[k]
+\end{align*}
+}
+
+Analogicznie wyznaczamy najwyższą pochodną oraz pozostałe pochodne wyjścia dla układów niższych rzędów.
+
+  \vspace{0.2cm}
+
+  \item \textbf{Rysowanie wykresów sygnału wejściowego i wyjściowego.} \par\vspace{0.1cm}
+  Do rysowania wykresów wykorzystano bibliotekę matplotlib. Rysowanie wykresów realizują funkcje \textcolor{blue}{\texttt{input\_plot}} i \textcolor{blue}{\texttt{output\_plot}}
+  w klasie {\texttt{input\_function}} i {\texttt{output\_compute}}.
+
+  \vspace{0.2cm}
+  
+  \item \textbf{Określenie stabilności układu.} \par\vspace{0.1cm}
+  Analiza stabilności na podstawie charakterystyk oraz odpowiedzi czasowych.
 
 
 
-%----------------------------------------------------------------------------------------
-%	BIBLIOGRAPHY
-%----------------------------------------------------------------------------------------
+  \vspace{0.2cm}
 
-%\printbibliography % Output the bibliography
+  \item \textbf{Wyznaczenie charakterystyk Bodego.} \par\vspace{0.1cm}
+  Narysowanie charakterystyki amplitudowej i fazowej.
+\end{enumerate}
 
-%----------------------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------------------------------------
+
+\section{Podsumowanie i wnioski}
+
+Założeniem projektu było zaimplementowanie symulatora układu danego transmitancją. Funkcje realizujące różniczkowanie zostały 
+zaimplementowane przez autorów projektu (różniczkowanie metodą Eulera). Generowanie sygnałów wejściowych zaimplementowano bez wykorzystania
+gotowych funkcji analitycznych z wyjątkiem np.sin wykorzystanej dla sinudoidy i sygnału prostokątnego. Program umożliwia zadawanie 
+parametrów symulacyjnych i zmianę parametrów w stosunku do symulacji pokazanej przed chwilą z poziomu interfejsu użytkownika. 
+
+\vspace{0.5cm}
+
+1. Metoda Eulera jest metodą dość prostą w implementacji i bardzo elastyczną w modyfikowaniu dla dowolnego rzędu układu. 
+Działanie jest prawidłowe pod warunkiem dobrania odpowiedniego kroku czasowego --- w naszej symulacji dobrany został krok 0.01s. 
+
+\vspace{0.5cm}
+
+2. Łatwość modyfikacji parametrów transmitancji i sygnałów pobudzających umożliwia szybkie testowanie wielu wariantów układu. W tym układów
+o różnych rzędach --- od zerowego do czwartego. 
+
+\vspace{0.5cm}
+
+3. Coś o metodzie RK4 jeśli jednak zostanie dołączona z output tests (porównanie etc)
+
+\vspace{0.5cm}
+
+Projekt spełnił wszystkie założone wymagania. Symulator jest dobrym narzędziem do testowania odpowiedzi różnych układów do 4 rzędu 
+i można dość łatwo rozbudowywać go dodając inne pobudzenia, czy zwiększając rząd układu. 
+
 
 \end{document}
