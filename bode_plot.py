@@ -60,8 +60,10 @@ class BodePlot:
         else:
             to_zero = np.abs(phase + 180) #we're looking for phase at -180 so minimazing it to 0
             gain_margin_freq = np.argmin(to_zero)
-            magnitude_180 = magnitude[gain_margin_freq]
-            gain_margin = -magnitude_180 #zapas wzmocnienia
+            if to_zero[gain_margin_freq] < 2: 
+                gain_margin = -magnitude[gain_margin_freq]
+            else:
+                gain_margin = np.inf    #inf when the phase doesn't dip below 180
 
             phase_margin_freq  = np.argmin(np.abs(magnitude))
             phase_0 = phase[phase_margin_freq]
